@@ -1,11 +1,13 @@
-export type SwapStatus = 'pending' | 'accepted' | 'rejected' | 'completed';
+export type SwapStatus = "pending" | "accepted" | "rejected" | "completed" | "expired";
 
 export interface SwapRequest {
   id: string;
   requesterId: string;
-  receiverId: string;
+  receiverId: string | null;
   offeredBookId: string;
-  wantedBookId: string;
+  wantedBookId: string | null;
+  isPublic: boolean;
   status: SwapStatus;
+  expiresAt?: string;
   createdAt: string;
 }

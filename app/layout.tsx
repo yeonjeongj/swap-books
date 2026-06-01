@@ -1,16 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Playfair_Display, Work_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const workSans = Work_Sans({
+  variable: "--font-work-sans",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const pretendard = localFont({
+  src: "../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
+  variable: "--font-pretendard",
+  display: "swap",
+  weight: "45 920",
 });
 
 export const metadata: Metadata = {
@@ -26,9 +36,9 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${playfairDisplay.variable} ${workSans.variable} ${pretendard.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col font-body">
         <Providers>{children}</Providers>
       </body>
     </html>
