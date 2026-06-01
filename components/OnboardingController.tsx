@@ -25,7 +25,17 @@ export default function OnboardingController() {
       defaultNickname={session.user.nickname || session.user.name || ""}
       defaultAvatarUrl={session.user.avatarUrl || session.user.image || ""}
       onComplete={async (nickname, avatarUrl) => {
-        await update({ nickname, avatarUrl });
+        const [_, response] = await Promise.all([
+          update({ nickname, avatarUrl }),
+          fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nickname, avatarUrl }),
+          }),
+        ]);
+        if (!response.ok) {
+          throw new Error("Failed to save user profile to database");
+        }
         if (session?.user?.id) {
           localStorage.setItem(getStorageKey(session.user.id), "1");
         }
