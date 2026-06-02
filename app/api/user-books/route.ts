@@ -30,14 +30,22 @@ export async function POST(req: NextRequest) {
   let body;
   try {
     body = await req.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const { isbn, title, author, publisher, coverImage, quote, reason } = body;
-  if (!title?.trim() || !author?.trim()) {
+  if (
+    typeof title !== "string" ||
+    typeof author !== "string" ||
+    !title.trim() ||
+    !author.trim()
+  ) {
     return NextResponse.json(
-      { error: "title and author are required" },
+      { error: "title and author must be non-empty strings" },
       { status: 400 }
     );
   }

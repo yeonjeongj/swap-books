@@ -14,14 +14,22 @@ export async function DELETE(
 
   const { id } = await ctx.params;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("user_books")
     .delete()
     .eq("id", id)
-    .eq("user_id", session.user.id);
+    .eq("user_id", session.user.id)
+    .select();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!data || data.length === 0) {
+    return NextResponse.json(
+      { error: "Book not found or unauthorized" },
+      { status: 404 }
+    );
   }
 
   return new NextResponse(null, { status: 204 });
