@@ -18,7 +18,9 @@ export async function GET(
     .from("swap_requests")
     .select("*")
     .eq("id", id)
-    .or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`)
+    .or(
+      `requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id},is_public.eq.true`
+    )
     .single();
 
   if (error) {
@@ -58,7 +60,7 @@ export async function PATCH(
 
   const { data: existing, error: fetchError } = await supabase
     .from("swap_requests")
-    .select("status, requester_id, receiver_id")
+    .select("status, requester_id, receiver_id, is_public")
     .eq("id", id)
     .single();
 
@@ -66,10 +68,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const isParticipant =
-    existing.requester_id === session.user.id ||
-    existing.receiver_id === session.user.id;
-  if (!isParticipant) {
+  const isRequester = existing.requester_id === session.user.id;
+  const isReceiver = existing.receiver_id === session.user.id;
+  const isPublicPending =
+    existing.is_public && !existing.receiver_id && existing.status === "pending";
+
+  if (!isRequester && !isReceiver && !isPublicPending) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -81,9 +85,39 @@ export async function PATCH(
     );
   }
 
+  if (
+    (status === "accepted" || status === "rejected") &&
+    !isReceiver &&
+    !isPublicPending
+  ) {
+    return NextResponse.json(
+      { error: "Only the receiver can accept or reject this swap request" },
+      { status: 403 }
+    );
+  }
+
+  if (status === "accepted" && isRequester && !isPublicPending) {
+    return NextResponse.json(
+      { error: "You cannot accept your own swap request" },
+      { status: 400 }
+    );
+  }
+
+  const updatePayload: Record<string, unknown> = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (isPublicPending && status === "accepted") {
+    updatePayload.receiver_id = session.user.id;
+    if (body.wantedBookId) {
+      updatePayload.wanted_book_id = body.wantedBookId;
+    }
+  }
+
   const { data, error } = await supabase
     .from("swap_requests")
-    .update({ status, updated_at: new Date().toISOString() })
+    .update(updatePayload)
     .eq("id", id)
     .select()
     .single();
