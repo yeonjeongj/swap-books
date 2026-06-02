@@ -27,7 +27,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { nickname, avatarUrl } = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const { nickname, avatarUrl } = body;
 
   if (!nickname?.trim()) {
     return NextResponse.json({ error: "nickname is required" }, { status: 400 });
