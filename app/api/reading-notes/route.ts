@@ -39,7 +39,11 @@ export async function GET(req: NextRequest) {
     .order("created_at", { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Error fetching reading notes:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch reading notes" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json(data);
@@ -59,16 +63,23 @@ export async function POST(req: NextRequest) {
   }
 
   const { swapId, bookId, page, quote } = body;
-  if (!swapId || !bookId || !page || !quote?.trim()) {
+  if (
+    !swapId ||
+    !bookId ||
+    typeof page !== "number" ||
+    page < 0 ||
+    !Number.isInteger(page) ||
+    !quote?.trim()
+  ) {
     return NextResponse.json(
-      { error: "swapId, bookId, page, and quote are required" },
+      { error: "swapId, bookId, a valid integer page, and quote are required" },
       { status: 400 }
     );
   }
 
   const { data: swap, error: swapError } = await supabase
     .from("swap_requests")
-    .select("requester_id, receiver_id, status")
+    .select("requester_id, receiver_id, status, offered_book_id, wanted_book_id")
     .eq("id", swapId)
     .single();
 
@@ -81,6 +92,13 @@ export async function POST(req: NextRequest) {
     swap.receiver_id === session.user.id;
   if (!isParticipant) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (bookId !== swap.offered_book_id && bookId !== swap.wanted_book_id) {
+    return NextResponse.json(
+      { error: "Book is not part of this swap" },
+      { status: 400 }
+    );
   }
 
   if (swap.status !== "accepted") {
@@ -103,7 +121,11 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Error creating reading note:", error);
+    return NextResponse.json(
+      { error: "Failed to create reading note" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json(data, { status: 201 });
