@@ -29,8 +29,13 @@ export default function OnboardingPopup({
       return;
     }
     setLoading(true);
-    await onComplete(trimmed, defaultAvatarUrl);
-    setLoading(false);
+    try {
+      await onComplete(trimmed, defaultAvatarUrl);
+    } catch {
+      setError("프로필 저장 중 오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
