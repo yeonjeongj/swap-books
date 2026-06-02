@@ -40,19 +40,19 @@ export default function BookCovers({ left, right }: Props) {
           className="flex-1 aspect-[3/4] rounded-sm shadow-sm"
           style={{ backgroundColor: left.coverColor }}
           onClick={() => setOpen("left")}
-          aria-label="책 정보 보기"
+          aria-label={`${left.userNickname}님의 책 정보 보기`}
         />
-        <button
-          aria-label="Swap books"
-          className="flex-shrink-0 flex items-center justify-center text-primary hover:text-tertiary transition-colors rotate-45"
+        <div
+          className="flex-shrink-0 flex items-center justify-center text-primary rotate-45"
+          aria-hidden="true"
         >
           <SwapIcon />
-        </button>
+        </div>
         <button
           className="flex-1 aspect-[3/4] rounded-sm shadow-sm"
           style={{ backgroundColor: right.coverColor }}
           onClick={() => setOpen("right")}
-          aria-label="책 정보 보기"
+          aria-label={`${right.userNickname}님의 책 정보 보기`}
         />
       </div>
 

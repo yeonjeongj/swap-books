@@ -97,10 +97,11 @@ const SWAP_BOOKS: SwapBook[] = [
 const AVATAR_COLORS = ["#5a633a", "#3e432e", "#7a6a52", "#4a5a3a"];
 
 function getInitials(name: string) {
-  return name.charAt(0).toUpperCase();
+  return name ? name.charAt(0).toUpperCase() : "";
 }
 
 function getAvatarColor(name: string) {
+  if (!name) return AVATAR_COLORS[0];
   const index = name.charCodeAt(0) % AVATAR_COLORS.length;
   return AVATAR_COLORS[index];
 }

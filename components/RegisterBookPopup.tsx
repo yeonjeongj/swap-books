@@ -36,7 +36,7 @@ export default function RegisterBookPopup({ onClose }: Props) {
 
         <form className="flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
           <div>
-            <label className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
+            <label htmlFor="book-search" className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
               책 검색
             </label>
             <div className="relative">
@@ -44,6 +44,7 @@ export default function RegisterBookPopup({ onClose }: Props) {
                 <SearchIcon />
               </div>
               <input
+                id="book-search"
                 type="text"
                 placeholder="제목 또는 저자를 검색하세요"
                 className="w-full border border-neutral/15 bg-white/60 pl-8 pr-3 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors"
@@ -52,13 +53,14 @@ export default function RegisterBookPopup({ onClose }: Props) {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
+            <label htmlFor="favorite-quote" className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
               좋아하는 문구
               <span className="ml-1.5 normal-case tracking-normal text-[9px] text-neutral/30">
                 Optional
               </span>
             </label>
             <textarea
+              id="favorite-quote"
               rows={2}
               placeholder="책에서 마음에 드는 문구를 적어주세요"
               className="w-full border border-neutral/15 bg-white/60 px-3 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors resize-none"
@@ -66,13 +68,14 @@ export default function RegisterBookPopup({ onClose }: Props) {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
+            <label htmlFor="recommendation-reason" className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
               추천하는 이유
               <span className="ml-1.5 normal-case tracking-normal text-[9px] text-neutral/30">
                 Optional
               </span>
             </label>
             <textarea
+              id="recommendation-reason"
               rows={2}
               placeholder="이 책을 추천하는 이유를 적어주세요"
               className="w-full border border-neutral/15 bg-white/60 px-3 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors resize-none"
@@ -80,7 +83,7 @@ export default function RegisterBookPopup({ onClose }: Props) {
           </div>
 
           <div>
-            <label className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
+            <label htmlFor="partner-nickname" className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
               교환할 상대의 닉네임 검색
             </label>
             <div className="relative">
@@ -88,6 +91,7 @@ export default function RegisterBookPopup({ onClose }: Props) {
                 <SearchIcon />
               </div>
               <input
+                id="partner-nickname"
                 type="text"
                 placeholder="닉네임을 입력하세요"
                 className="w-full border border-neutral/15 bg-white/60 pl-8 pr-3 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors"
