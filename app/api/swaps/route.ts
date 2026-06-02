@@ -52,6 +52,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const { data: book, error: bookError } = await supabase
+    .from("user_books")
+    .select("user_id")
+    .eq("id", offeredBookId)
+    .single();
+
+  if (bookError || !book) {
+    return NextResponse.json({ error: "Offered book not found" }, { status: 404 });
+  }
+
+  if (book.user_id !== session.user.id) {
+    return NextResponse.json(
+      { error: "You do not own the offered book" },
+      { status: 403 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("swap_requests")
     .insert({
