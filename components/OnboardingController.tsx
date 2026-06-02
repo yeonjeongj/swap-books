@@ -4,17 +4,19 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import OnboardingPopup from "@/components/OnboardingPopup";
 
-const STORAGE_KEY = "bibliotheca_onboarded";
+const getStorageKey = (userId: string) => `bibliotheca_onboarded_${userId}`;
 
 export default function OnboardingController() {
   const { data: session, status, update } = useSession();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (status === "authenticated" && !localStorage.getItem(STORAGE_KEY)) {
-      setShow(true);
+    if (status === "authenticated" && session?.user?.id) {
+      if (!localStorage.getItem(getStorageKey(session.user.id))) {
+        setShow(true);
+      }
     }
-  }, [status]);
+  }, [status, session]);
 
   if (!show || !session) return null;
 
@@ -24,7 +26,9 @@ export default function OnboardingController() {
       defaultAvatarUrl={session.user.avatarUrl || session.user.image || ""}
       onComplete={async (nickname, avatarUrl) => {
         await update({ nickname, avatarUrl });
-        localStorage.setItem(STORAGE_KEY, "1");
+        if (session?.user?.id) {
+          localStorage.setItem(getStorageKey(session.user.id), "1");
+        }
         setShow(false);
       }}
       onClose={() => setShow(false)}
