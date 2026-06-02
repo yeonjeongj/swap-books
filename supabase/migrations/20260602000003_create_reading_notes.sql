@@ -19,3 +19,7 @@ CREATE TABLE reading_note_comments (
 );
 
 ALTER TABLE reading_note_comments ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX idx_reading_notes_swap_request_id ON reading_notes(swap_request_id);
+CREATE INDEX idx_reading_notes_book_id ON reading_notes(book_id);
+CREATE INDEX idx_reading_note_comments_note_id ON reading_note_comments(note_id);
