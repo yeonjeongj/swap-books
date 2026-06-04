@@ -115,6 +115,17 @@ export async function PATCH(
       updatePayload.receiver_id = session.user.id;
     }
     if (body.wantedBookId) {
+      const { data: book } = await supabase
+        .from("user_books")
+        .select("user_id")
+        .eq("id", body.wantedBookId)
+        .single();
+      if (!book || book.user_id !== session.user.id) {
+        return NextResponse.json(
+          { error: "You do not own the wanted book" },
+          { status: 403 }
+        );
+      }
       updatePayload.wanted_book_id = body.wantedBookId;
     }
     updatePayload.receiver_message = body.receiverMessage ?? null;

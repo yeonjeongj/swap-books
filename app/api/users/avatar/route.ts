@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
+const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+
+// SVG excluded: can embed JavaScript → Stored XSS
+const ALLOWED_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/gif": "gif",
+  "image/webp": "webp",
+};
+
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -13,8 +23,17 @@ export async function POST(req: NextRequest) {
   if (!(file instanceof Blob)) {
     return NextResponse.json({ error: "file is required" }, { status: 400 });
   }
+  const ext = ALLOWED_TYPES[file.type];
+  if (!ext) {
+    return NextResponse.json(
+      { error: "File must be jpeg, png, gif, or webp" },
+      { status: 400 }
+    );
+  }
+  if (file.size > MAX_SIZE) {
+    return NextResponse.json({ error: "File must be under 2 MB" }, { status: 400 });
+  }
 
-  const ext = (file as File).name?.split(".").pop() ?? "jpg";
   const path = `${session.user.id}/avatar.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 

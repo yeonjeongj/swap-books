@@ -128,7 +128,7 @@ function CommentItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <span className="text-[11px] font-body font-medium text-neutral">{name}</span>
-          <span className="text-[10px] text-neutral/35 font-body">
+          <span className="text-[10px] text-neutral/35 font-body" suppressHydrationWarning>
             {new Date(comment.created_at).toLocaleDateString("ko-KR")}
           </span>
           {onDelete && (
@@ -348,6 +348,10 @@ function AddNoteForm({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => { if (imagePreview) URL.revokeObjectURL(imagePreview); };
+  }, [imagePreview]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
