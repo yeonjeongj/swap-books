@@ -16,7 +16,9 @@ export async function GET(
 
   const { data, error } = await supabase
     .from("swap_requests")
-    .select("*")
+    .select(
+      `*, offered_book:user_books!offered_book_id(id, title, author, cover_image), wanted_book:user_books!wanted_book_id(id, title, author, cover_image)`
+    )
     .eq("id", id)
     .or(
       `requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id},is_public.eq.true`
@@ -108,11 +110,14 @@ export async function PATCH(
     updated_at: new Date().toISOString(),
   };
 
-  if (isPublicPending && status === "accepted") {
-    updatePayload.receiver_id = session.user.id;
+  if (status === "accepted") {
+    if (isPublicPending) {
+      updatePayload.receiver_id = session.user.id;
+    }
     if (body.wantedBookId) {
       updatePayload.wanted_book_id = body.wantedBookId;
     }
+    updatePayload.receiver_message = body.receiverMessage ?? null;
   }
 
   const { data, error } = await supabase

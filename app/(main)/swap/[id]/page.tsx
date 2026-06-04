@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import SwapDetail from "./SwapDetail";
 
 export default async function SwapDetailPage({
@@ -5,6 +6,7 @@ export default async function SwapDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await params;
-  return <SwapDetail />;
+  const { id } = await params;
+  const session = await auth();
+  return <SwapDetail swapId={id} currentUserId={session?.user?.id ?? null} />;
 }

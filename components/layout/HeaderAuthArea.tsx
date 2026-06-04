@@ -1,7 +1,8 @@
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import Image from "next/image";
+import NotificationBell from "./NotificationBell";
 
 export default function HeaderAuthArea() {
   const { data: session, status } = useSession();
@@ -23,29 +24,27 @@ export default function HeaderAuthArea() {
 
   return (
     <div className="flex items-center gap-2.5">
+      <NotificationBell />
       <span className="text-[11px] font-body text-primary/60 hidden sm:block">
         {session.user.nickname}
       </span>
-      <button
-        onClick={() => signOut()}
-        className="group relative flex-shrink-0"
-        aria-label="로그아웃"
-        title="로그아웃"
-      >
+      <div className="flex-shrink-0">
         {session.user.avatarUrl ? (
-          <Image
-            src={session.user.avatarUrl}
-            alt={session.user.nickname}
-            width={28}
-            height={28}
-            className="rounded-full object-cover ring-1 ring-primary/15 group-hover:ring-primary/40 transition-all"
-          />
+          <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-primary/15">
+            <Image
+              src={session.user.avatarUrl}
+              alt={session.user.nickname ?? ""}
+              width={28}
+              height={28}
+              className="object-cover w-full h-full"
+            />
+          </div>
         ) : (
-          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[11px] text-primary font-body font-semibold ring-1 ring-primary/15 group-hover:ring-primary/40 transition-all">
+          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[11px] text-primary font-body font-semibold ring-1 ring-primary/15">
             {session.user.nickname?.[0]?.toUpperCase() ?? "?"}
           </div>
         )}
-      </button>
+      </div>
     </div>
   );
 }

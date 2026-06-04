@@ -33,10 +33,10 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from("reading_notes")
     .select(
-      `*, reading_note_comments(id, author_id, text, created_at)`
+      `*, author:users!author_id(nickname), reading_note_comments(id, author_id, text, created_at, parent_id, author:users!author_id(nickname))`
     )
     .eq("swap_request_id", swapId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching reading notes:", error);
@@ -62,17 +62,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { swapId, bookId, page, quote } = body;
+  const { swapId, bookId, page, quote, imageUrl, comment } = body;
   if (
     !swapId ||
     !bookId ||
     typeof page !== "number" ||
     page < 0 ||
-    !Number.isInteger(page) ||
-    !quote?.trim()
+    !Number.isInteger(page)
   ) {
     return NextResponse.json(
-      { error: "swapId, bookId, a valid integer page, and quote are required" },
+      { error: "swapId, bookId, and a valid integer page are required" },
       { status: 400 }
     );
   }
@@ -115,7 +114,8 @@ export async function POST(req: NextRequest) {
       swap_request_id: swapId,
       book_id: bookId,
       page,
-      quote: quote.trim(),
+      quote: quote?.trim() || null,
+      image_url: imageUrl ?? null,
     })
     .select()
     .single();
@@ -126,6 +126,15 @@ export async function POST(req: NextRequest) {
       { error: "Failed to create reading note" },
       { status: 500 }
     );
+  }
+
+  if (comment?.trim()) {
+    await supabase.from("reading_note_comments").insert({
+      note_id: data.id,
+      author_id: session.user.id,
+      text: comment.trim(),
+      parent_id: null,
+    });
   }
 
   return NextResponse.json(data, { status: 201 });

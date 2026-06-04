@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { offeredBookId, receiverId, wantedBookId, isPublic } = body;
+  const { offeredBookId, receiverId, wantedBookId, isPublic, requesterMessage } = body;
   if (!offeredBookId) {
     return NextResponse.json(
       { error: "offeredBookId is required" },
@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
       receiver_id: receiverId ?? null,
       wanted_book_id: wantedBookId ?? null,
       is_public: isPublic ?? false,
+      requester_message: requesterMessage ?? null,
     })
     .select()
     .single();
