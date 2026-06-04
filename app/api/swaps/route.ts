@@ -51,6 +51,12 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  if (!isPublic && !receiverId) {
+    return NextResponse.json(
+      { error: "receiverId is required for private swap requests" },
+      { status: 400 }
+    );
+  }
 
   const { data: book, error: bookError } = await supabase
     .from("user_books")

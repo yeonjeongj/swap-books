@@ -17,7 +17,8 @@ export async function DELETE(
   const { count } = await supabase
     .from("swap_requests")
     .select("id", { count: "exact", head: true })
-    .or(`offered_book_id.eq.${id},wanted_book_id.eq.${id}`);
+    .or(`offered_book_id.eq.${id},wanted_book_id.eq.${id}`)
+    .in("status", ["pending", "accepted", "completed"]);
 
   if (count && count > 0) {
     return NextResponse.json(

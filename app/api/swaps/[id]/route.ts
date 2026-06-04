@@ -62,7 +62,7 @@ export async function PATCH(
 
   const { data: existing, error: fetchError } = await supabase
     .from("swap_requests")
-    .select("status, requester_id, receiver_id, is_public")
+    .select("status, requester_id, receiver_id, is_public, wanted_book_id")
     .eq("id", id)
     .single();
 
@@ -113,6 +113,13 @@ export async function PATCH(
   if (status === "accepted") {
     if (isPublicPending) {
       updatePayload.receiver_id = session.user.id;
+    }
+    const finalWantedBookId = body.wantedBookId || existing.wanted_book_id;
+    if (!finalWantedBookId) {
+      return NextResponse.json(
+        { error: "wantedBookId is required to accept the swap" },
+        { status: 400 }
+      );
     }
     if (body.wantedBookId) {
       const { data: book } = await supabase
