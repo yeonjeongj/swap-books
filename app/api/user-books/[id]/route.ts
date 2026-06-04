@@ -14,6 +14,19 @@ export async function DELETE(
 
   const { id } = await ctx.params;
 
+  const { count } = await supabase
+    .from("swap_requests")
+    .select("id", { count: "exact", head: true })
+    .or(`offered_book_id.eq.${id},wanted_book_id.eq.${id}`)
+    .in("status", ["pending", "accepted", "completed"]);
+
+  if (count && count > 0) {
+    return NextResponse.json(
+      { error: "교환독서를 한 책은 삭제할 수 없습니다" },
+      { status: 409 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("user_books")
     .delete()

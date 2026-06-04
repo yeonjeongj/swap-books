@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { isbn, title, author, publisher, coverImage, quote, reason } = body;
+  const { isbn, title, author, publisher, coverImage, rating } = body;
   if (
     typeof title !== "string" ||
     typeof author !== "string" ||
@@ -59,8 +59,7 @@ export async function POST(req: NextRequest) {
       author: author.trim(),
       publisher: publisher ?? null,
       cover_image: coverImage ?? null,
-      quote: quote ?? null,
-      reason: reason ?? null,
+      rating: typeof rating === "number" ? rating : null,
     })
     .select()
     .single();

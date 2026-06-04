@@ -13,8 +13,6 @@ export interface UserBook {
   id: string;
   userId: string;
   bookId: string;
-  quote?: string;
-  reason?: string;
   isRecommended: boolean;
   createdAt: string;
 }

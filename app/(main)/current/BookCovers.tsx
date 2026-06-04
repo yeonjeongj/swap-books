@@ -1,18 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import BookDetailPopup from "@/components/BookDetailPopup";
+import { highResCover } from "@/lib/utils/cover";
 
-type BookData = {
+export type BookSide = {
+  title: string;
+  cover_image: string | null;
   coverColor: string;
-  quote?: string;
-  reason?: string;
-  userNickname: string;
+  nickname: string;
+  message: string | null;
 };
 
 type Props = {
-  left: BookData;
-  right: BookData;
+  left: BookSide;
+  right: BookSide;
 };
 
 function SwapIcon() {
@@ -29,6 +32,18 @@ function SwapIcon() {
   );
 }
 
+function Cover({ book }: { book: BookSide }) {
+  const src = highResCover(book.cover_image);
+  if (src) {
+    return (
+      <div className="relative w-full aspect-[3/4] overflow-hidden">
+        <Image src={src} alt={book.title} fill className="object-cover object-top" quality={90} />
+      </div>
+    );
+  }
+  return <div className="w-full aspect-[3/4]" style={{ backgroundColor: book.coverColor }} />;
+}
+
 export default function BookCovers({ left, right }: Props) {
   const [open, setOpen] = useState<"left" | "right" | null>(null);
   const selected = open === "left" ? left : open === "right" ? right : null;
@@ -37,11 +52,12 @@ export default function BookCovers({ left, right }: Props) {
     <>
       <div className="flex items-center gap-6">
         <button
-          className="flex-1 aspect-[3/4] rounded-sm shadow-sm"
-          style={{ backgroundColor: left.coverColor }}
+          className="flex-1 overflow-hidden rounded-sm shadow-sm"
           onClick={() => setOpen("left")}
-          aria-label={`${left.userNickname}님의 책 정보 보기`}
-        />
+          aria-label={`${left.nickname}님의 책 정보 보기`}
+        >
+          <Cover book={left} />
+        </button>
         <div
           className="flex-shrink-0 flex items-center justify-center text-primary rotate-45"
           aria-hidden="true"
@@ -49,18 +65,18 @@ export default function BookCovers({ left, right }: Props) {
           <SwapIcon />
         </div>
         <button
-          className="flex-1 aspect-[3/4] rounded-sm shadow-sm"
-          style={{ backgroundColor: right.coverColor }}
+          className="flex-1 overflow-hidden rounded-sm shadow-sm"
           onClick={() => setOpen("right")}
-          aria-label={`${right.userNickname}님의 책 정보 보기`}
-        />
+          aria-label={`${right.nickname}님의 책 정보 보기`}
+        >
+          <Cover book={right} />
+        </button>
       </div>
 
       {selected && (
         <BookDetailPopup
-          quote={selected.quote}
-          reason={selected.reason}
-          userNickname={selected.userNickname}
+          reason={selected.message ?? undefined}
+          userNickname={selected.nickname}
           onClose={() => setOpen(null)}
         />
       )}

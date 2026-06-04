@@ -1,43 +1,39 @@
-import BookCovers from "./BookCovers";
+import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
+import BookCovers, { type BookSide } from "./BookCovers";
 
-const EXCHANGE = {
-  left: {
-    reader: "Reader Julian",
-    title: "The Secret History",
-    author: "Donna Tartt",
-    tags: ["Classic", "Hardcover"],
-    coverColor: "#3a4430",
-    quote:
-      "Beauty is terror. Whatever we call beautiful, we quiver before it.",
-    reason:
-      "고전의 아름다움과 공포가 공존하는 이 책은 읽는 내내 긴장을 놓을 수 없었습니다. 함께 나누고 싶어졌어요.",
-    userNickname: "Reader Julian",
-  },
-  right: {
-    reader: "Reader Amara",
-    title: "On Earth We're Briefly Gorgeous",
-    author: "Ocean Vuong",
-    tags: ["Contemporary", "Paperback"],
-    coverColor: "#6b7a52",
-    quote: "Let me begin again.",
-    reason:
-      "단 세 단어로 책 전체의 감정을 담아낸 문장입니다. 이 책은 언어 자체가 시입니다.",
-    userNickname: "Reader Amara",
-  },
+const COVER_COLORS = ["#3a4430", "#6b7a52", "#4a5a3a", "#7a6a52", "#5a4a3a"];
+
+type AcceptedSwap = {
+  id: string;
+  requester_message: string | null;
+  receiver_message: string | null;
+  offered_book: { id: string; title: string; author: string; cover_image: string | null } | null;
+  wanted_book: { id: string; title: string; author: string; cover_image: string | null } | null;
+  requester: { id: string; nickname: string | null } | null;
+  receiver: { id: string; nickname: string | null } | null;
 };
 
-function Tag({ label }: { label: string }) {
-  return (
-    <span className="text-[10px] tracking-[0.18em] uppercase border border-neutral/25 px-2 py-0.5 text-neutral/50">
-      {label}
-    </span>
-  );
-}
+export default async function CurrentSwap() {
+  const session = await auth();
+  let swaps: AcceptedSwap[] = [];
 
-
-
-export default function CurrentSwap() {
-  const { left, right } = EXCHANGE;
+  if (session?.user?.id) {
+    const { data } = await supabase
+      .from("swap_requests")
+      .select(
+        `id, requester_message, receiver_message,
+        offered_book:user_books!offered_book_id(id, title, author, cover_image),
+        wanted_book:user_books!wanted_book_id(id, title, author, cover_image),
+        requester:users!requester_id(id, nickname),
+        receiver:users!receiver_id(id, nickname)`
+      )
+      .or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`)
+      .eq("status", "accepted")
+      .order("created_at", { ascending: false });
+    swaps = (data ?? []) as unknown as AcceptedSwap[];
+  }
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -52,53 +48,73 @@ export default function CurrentSwap() {
         <div className="w-14 h-px bg-neutral/20 mt-5" />
       </section>
 
-      {/* Book exchange */}
-      <section className="w-full max-w-2xl px-8 mt-12">
-        {/* Reader labels */}
-        <div className="flex gap-6 mb-3">
-          <p className="flex-1 text-[10px] tracking-[0.2em] uppercase text-neutral/40">
-            {left.reader}
-          </p>
-          <div className="flex-shrink-0 w-5" />
-          <p className="flex-1 text-[10px] tracking-[0.2em] uppercase text-neutral/40">
-            {right.reader}
-          </p>
-        </div>
+      {/* Swap list */}
+      <div className="w-full max-w-2xl px-8 mt-12 flex flex-col gap-16">
+        {swaps.length === 0 ? (
+          <p className="text-center text-sm font-body text-neutral/35">데이터가 없습니다</p>
+        ) : (
+          swaps.map((swap, i) => {
+            const left: BookSide = {
+              title: swap.offered_book?.title ?? "",
+              cover_image: swap.offered_book?.cover_image ?? null,
+              coverColor: COVER_COLORS[i * 2 % COVER_COLORS.length],
+              nickname: swap.requester?.nickname ?? "독자",
+              message: swap.requester_message,
+            };
+            const right: BookSide = {
+              title: swap.wanted_book?.title ?? "",
+              cover_image: swap.wanted_book?.cover_image ?? null,
+              coverColor: COVER_COLORS[(i * 2 + 1) % COVER_COLORS.length],
+              nickname: swap.receiver?.nickname ?? "독자",
+              message: swap.receiver_message,
+            };
 
-        <BookCovers left={left} right={right} />
+            return (
+              <div key={swap.id}>
+                {/* Reader labels */}
+                <div className="flex gap-6 mb-3">
+                  <p className="flex-1 text-[10px] tracking-[0.2em] uppercase text-neutral/40 truncate">
+                    {left.nickname}
+                  </p>
+                  <div className="flex-shrink-0 w-5" />
+                  <p className="flex-1 text-[10px] tracking-[0.2em] uppercase text-neutral/40 truncate">
+                    {right.nickname}
+                  </p>
+                </div>
 
-        {/* Book info */}
-        <div className="flex gap-6 mt-4">
-          <div className="flex-1">
-            <h2 className="font-headline text-xl text-neutral leading-snug">
-              {left.title}
-            </h2>
-            <p className="text-neutral/45 text-sm mt-1 font-body">{left.author}</p>
-            <div className="flex gap-2 mt-3 flex-wrap">
-              {left.tags.map((tag) => (
-                <Tag key={tag} label={tag} />
-              ))}
-            </div>
-          </div>
-          <div className="flex-shrink-0 w-5" />
-          <div className="flex-1">
-            <h2 className="font-headline text-xl text-neutral leading-snug">
-              {right.title}
-            </h2>
-            <p className="text-neutral/45 text-sm mt-1 font-body">{right.author}</p>
-            <div className="flex gap-2 mt-3 flex-wrap">
-              {right.tags.map((tag) => (
-                <Tag key={tag} label={tag} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+                <BookCovers left={left} right={right} />
 
-      {/* CTA */}
-      <button className="mt-16 bg-tertiary text-secondary text-[11px] tracking-[0.3em] uppercase px-14 py-4 hover:bg-primary transition-colors">
-        Join Exchange
-      </button>
+                {/* Book info */}
+                <div className="flex gap-6 mt-4">
+                  <div className="flex-1">
+                    <h2 className="font-headline text-xl text-neutral leading-snug">{left.title}</h2>
+                    {swap.offered_book?.author && (
+                      <p className="text-neutral/45 text-sm mt-1 font-body">{swap.offered_book.author}</p>
+                    )}
+                  </div>
+                  <div className="flex-shrink-0 w-5" />
+                  <div className="flex-1">
+                    <h2 className="font-headline text-xl text-neutral leading-snug">{right.title}</h2>
+                    {swap.wanted_book?.author && (
+                      <p className="text-neutral/45 text-sm mt-1 font-body">{swap.wanted_book.author}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="flex justify-center mt-8">
+                  <Link
+                    href={`/swap/${swap.id}`}
+                    className="bg-tertiary text-secondary text-[11px] tracking-[0.3em] uppercase px-14 py-4 hover:bg-primary transition-colors"
+                  >
+                    교환독서 상세 바로가기
+                  </Link>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
 
       {/* Quote */}
       <section className="w-full max-w-xl px-8 py-28 text-center">

@@ -11,22 +11,28 @@ export default function OnboardingController() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (status === "authenticated" && session?.user?.id) {
-      if (!localStorage.getItem(getStorageKey(session.user.id))) {
-        setShow(true);
-      }
+    if (status !== "authenticated" || !session?.user?.id) return;
+    const key = getStorageKey(session.user.id);
+    // If user already completed onboarding (has a saved profile), mark and skip
+    if (session.user.hasCompletedOnboarding) {
+      localStorage.setItem(key, "1");
+      return;
     }
-  }, [status, session]);
+    if (!localStorage.getItem(key)) {
+      queueMicrotask(() => setShow(true));
+    }
+  }, [status, session?.user?.id, session?.user?.hasCompletedOnboarding]);
 
   if (!show || !session) return null;
 
   return (
     <OnboardingPopup
-      defaultNickname={session.user.nickname || session.user.name || ""}
-      defaultAvatarUrl={session.user.avatarUrl || session.user.image || ""}
+      title="프로필을 설정해주세요"
+      defaultNickname={session.user.name || ""}
+      defaultAvatarUrl={session.user.image || ""}
       onComplete={async (nickname, avatarUrl) => {
-        const [_, response] = await Promise.all([
-          update({ nickname, avatarUrl }),
+        const [, response] = await Promise.all([
+          update({ nickname, avatarUrl, hasCompletedOnboarding: true }),
           fetch("/api/users", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
