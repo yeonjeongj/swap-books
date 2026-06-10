@@ -4,24 +4,16 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import OnboardingPopup from "@/components/OnboardingPopup";
 
-const getStorageKey = (userId: string) => `bibliotheca_onboarded_${userId}`;
-
 export default function OnboardingController() {
   const { data: session, status, update } = useSession();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user?.id) return;
-    const key = getStorageKey(session.user.id);
-    // If user already completed onboarding (has a saved profile), mark and skip
-    if (session.user.hasCompletedOnboarding) {
-      localStorage.setItem(key, "1");
-      return;
-    }
-    if (!localStorage.getItem(key)) {
+    if (!session.user.nickname) {
       queueMicrotask(() => setShow(true));
     }
-  }, [status, session?.user?.id, session?.user?.hasCompletedOnboarding]);
+  }, [status, session?.user?.id, session?.user?.nickname]);
 
   if (!show || !session) return null;
 
@@ -32,7 +24,7 @@ export default function OnboardingController() {
       defaultAvatarUrl={session.user.image || ""}
       onComplete={async (nickname, avatarUrl) => {
         const [, response] = await Promise.all([
-          update({ nickname, avatarUrl, hasCompletedOnboarding: true }),
+          update({ nickname, avatarUrl }),
           fetch("/api/users", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -41,9 +33,6 @@ export default function OnboardingController() {
         ]);
         if (!response.ok) {
           throw new Error("Failed to save user profile to database");
-        }
-        if (session?.user?.id) {
-          localStorage.setItem(getStorageKey(session.user.id), "1");
         }
         setShow(false);
       }}

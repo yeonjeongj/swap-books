@@ -27,7 +27,8 @@ export default function DeleteBookButton({ bookId }: { bookId: string }) {
       onClick={handleDelete}
       disabled={deleting}
       aria-label="책 삭제"
-      className="w-6 h-6 flex items-center justify-center text-neutral/25 hover:text-red-400 transition-colors disabled:opacity-40"
+      className="w-6 h-6 flex items-center justify-center transition-colors hover:text-red-400 disabled:opacity-40"
+      style={{ color: "#aaaaaa" }}
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <polyline points="3 6 5 6 21 6" />

@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import BookCovers, { type BookSide } from "./BookCovers";
 
-const COVER_COLORS = ["#3a4430", "#6b7a52", "#4a5a3a", "#7a6a52", "#5a4a3a"];
+const COVER_COLORS = ["#a0e4f2", "#f7a8c7", "#f4d23d", "#b8e6b0", "#d4b8e0"];
 
 type AcceptedSwap = {
   id: string;
@@ -36,24 +36,89 @@ export default async function CurrentSwap() {
   }
 
   return (
-    <div className="flex flex-col items-center w-full">
-      {/* Section heading */}
-      <section className="flex flex-col items-center pt-16 pb-4 px-6 text-center">
-        <p className="text-primary text-[10px] tracking-[0.28em] uppercase font-body">
-          Curated Dialogues
-        </p>
-        <h1 className="font-headline text-5xl text-neutral mt-3">
+    <div className="max-w-3xl mx-auto px-5 py-12">
+      {/* Header */}
+      <div className="mb-10">
+        <span
+          style={{
+            display: "inline-block",
+            backgroundColor: "#a0e4f2",
+            border: "1.5px solid #030505",
+            borderRadius: "9999px",
+            padding: "3px 12px",
+            fontSize: "0.75rem",
+            fontWeight: 700,
+            marginBottom: "0.5rem",
+          }}
+        >
+          진행 중인 교환
+        </span>
+        <h1
+          style={{
+            fontFamily: "var(--font-fredoka)",
+            fontSize: "clamp(1.75rem, 6vw, 2.5rem)",
+            fontWeight: 700,
+            color: "#030505",
+            lineHeight: 1.1,
+          }}
+        >
           Current Exchange
         </h1>
-        <div className="w-14 h-px bg-neutral/20 mt-5" />
-      </section>
+        <p style={{ color: "#888888", fontSize: "0.875rem", marginTop: "0.5rem" }}>
+          나의 교환독서 현황이에요
+        </p>
+      </div>
 
       {/* Swap list */}
-      <div className="w-full max-w-2xl px-8 mt-12 flex flex-col gap-16">
-        {swaps.length === 0 ? (
-          <p className="text-center text-sm font-body text-neutral/35">데이터가 없습니다</p>
-        ) : (
-          swaps.map((swap, i) => {
+      {!session ? (
+        <div
+          style={{
+            border: "1px solid #E0E0E0",
+            borderRadius: "12px",
+            padding: "3rem",
+            textAlign: "center",
+            backgroundColor: "#f5f5f5",
+          }}
+        >
+          <p style={{ color: "#888888", fontSize: "0.9375rem" }}>
+            로그인 후 이용할 수 있습니다
+          </p>
+        </div>
+      ) : swaps.length === 0 ? (
+        <div
+          style={{
+            border: "1px solid #E0E0E0",
+            borderRadius: "12px",
+            padding: "3rem",
+            textAlign: "center",
+            backgroundColor: "#f5f5f5",
+          }}
+        >
+          <p style={{ color: "#888888", fontSize: "0.9375rem" }}>
+            진행 중인 교환독서가 없어요
+          </p>
+          <Link
+            href="/"
+            style={{
+              display: "inline-block",
+              marginTop: "1rem",
+              backgroundColor: "#f4d23d",
+              border: "2px solid #030505",
+              borderRadius: "9999px",
+              padding: "9px 20px",
+              fontWeight: 700,
+              fontSize: "0.875rem",
+              boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
+              color: "#030505",
+              textDecoration: "none",
+            }}
+          >
+            홈으로 돌아가기
+          </Link>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {swaps.map((swap, i) => {
             const left: BookSide = {
               title: swap.offered_book?.title ?? "",
               cover_image: swap.offered_book?.cover_image ?? null,
@@ -70,62 +135,122 @@ export default async function CurrentSwap() {
             };
 
             return (
-              <div key={swap.id}>
+              <div
+                key={swap.id}
+                style={{
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #E0E0E0",
+                  borderRadius: "12px",
+                  boxShadow: "0px 2px 8px rgba(3,5,5,0.08)",
+                  padding: "1.25rem",
+                }}
+              >
                 {/* Reader labels */}
-                <div className="flex gap-6 mb-3">
-                  <p className="flex-1 text-[10px] tracking-[0.2em] uppercase text-neutral/40 truncate">
-                    {left.nickname}
-                  </p>
+                <div className="flex gap-4 mb-3">
+                  <div className="flex-1">
+                    <span
+                      style={{
+                        display: "inline-block",
+                        backgroundColor: "#f4d23d",
+                        border: "1px solid #030505",
+                        borderRadius: "9999px",
+                        padding: "2px 10px",
+                        fontSize: "0.6875rem",
+                        fontWeight: 700,
+                        color: "#030505",
+                      }}
+                    >
+                      {left.nickname}
+                    </span>
+                  </div>
                   <div className="flex-shrink-0 w-5" />
-                  <p className="flex-1 text-[10px] tracking-[0.2em] uppercase text-neutral/40 truncate">
-                    {right.nickname}
-                  </p>
+                  <div className="flex-1">
+                    <span
+                      style={{
+                        display: "inline-block",
+                        backgroundColor: "#f4d23d",
+                        border: "1px solid #030505",
+                        borderRadius: "9999px",
+                        padding: "2px 10px",
+                        fontSize: "0.6875rem",
+                        fontWeight: 700,
+                        color: "#030505",
+                      }}
+                    >
+                      {right.nickname}
+                    </span>
+                  </div>
                 </div>
 
                 <BookCovers left={left} right={right} />
 
                 {/* Book info */}
-                <div className="flex gap-6 mt-4">
+                <div className="flex gap-4 mt-4">
                   <div className="flex-1">
-                    <h2 className="font-headline text-xl text-neutral leading-snug">{left.title}</h2>
+                    <p
+                      style={{
+                        fontFamily: "var(--font-fredoka)",
+                        fontSize: "1rem",
+                        fontWeight: 700,
+                        color: "#030505",
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {left.title}
+                    </p>
                     {swap.offered_book?.author && (
-                      <p className="text-neutral/45 text-sm mt-1 font-body">{swap.offered_book.author}</p>
+                      <p style={{ fontSize: "0.75rem", color: "#888888", marginTop: "2px" }}>
+                        {swap.offered_book.author}
+                      </p>
                     )}
                   </div>
                   <div className="flex-shrink-0 w-5" />
                   <div className="flex-1">
-                    <h2 className="font-headline text-xl text-neutral leading-snug">{right.title}</h2>
+                    <p
+                      style={{
+                        fontFamily: "var(--font-fredoka)",
+                        fontSize: "1rem",
+                        fontWeight: 700,
+                        color: "#030505",
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {right.title}
+                    </p>
                     {swap.wanted_book?.author && (
-                      <p className="text-neutral/45 text-sm mt-1 font-body">{swap.wanted_book.author}</p>
+                      <p style={{ fontSize: "0.75rem", color: "#888888", marginTop: "2px" }}>
+                        {swap.wanted_book.author}
+                      </p>
                     )}
                   </div>
                 </div>
 
                 {/* CTA */}
-                <div className="flex justify-center mt-8">
+                <div className="flex justify-center mt-5">
                   <Link
                     href={`/swap/${swap.id}`}
-                    className="bg-tertiary text-secondary text-[11px] tracking-[0.3em] uppercase px-14 py-4 hover:bg-primary transition-colors"
+                    style={{
+                      display: "inline-block",
+                      backgroundColor: "#ffffff",
+                      border: "2px solid #030505",
+                      borderRadius: "9999px",
+                      padding: "8px 24px",
+                      fontWeight: 700,
+                      fontSize: "0.8125rem",
+                      boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
+                      color: "#030505",
+                      textDecoration: "none",
+                    }}
+                    className="transition-colors hover:bg-[#f5f5f5]"
                   >
-                    교환독서 상세 바로가기
+                    교환독서 상세 보기
                   </Link>
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
-
-      {/* Quote */}
-      <section className="w-full max-w-xl px-8 py-28 text-center">
-        <blockquote className="font-headline italic text-[1.35rem] text-neutral leading-relaxed">
-          &ldquo;A book is a conversation that spans across time and space. When
-          we exchange stories, we exchange parts of our world.&rdquo;
-        </blockquote>
-        <p className="text-[10px] tracking-[0.25em] uppercase text-neutral/40 mt-6 font-body">
-          — The Bibliophile&apos;s Manifesto
-        </p>
-      </section>
+          })}
+        </div>
+      )}
     </div>
   );
 }

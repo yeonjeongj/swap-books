@@ -18,7 +18,17 @@ export default function SwapRequestButton({ userBooks }: { userBooks: ExistingBo
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 border border-neutral/20 px-3 py-1.5 text-[11px] font-body text-neutral/60 hover:border-neutral/40 transition-colors"
+        className="transition-colors hover:bg-[#f5f5f5]"
+        style={{
+          backgroundColor: "#ffffff",
+          border: "2px solid #030505",
+          borderRadius: "9999px",
+          padding: "7px 16px",
+          fontWeight: 700,
+          fontSize: "0.75rem",
+          boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
+          color: "#030505",
+        }}
       >
         교환독서 신청하기
       </button>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -6,66 +7,7 @@ import RegisterBookButton from "./RegisterBookButton";
 import SwapRequestButton from "./SwapRequestButton";
 import ProfileEditButton from "./ProfileEditButton";
 import DeleteBookButton from "./DeleteBookButton";
-
-type CalendarEvent = { id: string; date: string; time: string; title: string };
-
-const EVENTS: CalendarEvent[] = [
-  { id: "ev-1", date: "2025-05-02", time: "오전 10:00", title: "서울 북클럽" },
-  { id: "ev-2", date: "2025-05-13", time: "오후 2:00", title: "독서모임(강남)" },
-];
-
-type CalDay = { day: number; isPrev?: boolean };
-
-const WEEKS: CalDay[][] = [
-  [{ day: 27, isPrev: true }, { day: 28, isPrev: true }, { day: 29, isPrev: true }, { day: 30, isPrev: true }, { day: 1 }, { day: 2 }, { day: 3 }],
-  [{ day: 4 }, { day: 5 }, { day: 6 }, { day: 7 }, { day: 8 }, { day: 9 }, { day: 10 }],
-  [{ day: 11 }, { day: 12 }, { day: 13 }, { day: 14 }, { day: 15 }, { day: 16 }, { day: 17 }],
-];
-
-const DAY_LABELS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-
-function getEvent(day: number, isPrev?: boolean): CalendarEvent | undefined {
-  if (isPrev) return undefined;
-  const key = `2025-05-${String(day).padStart(2, "0")}`;
-  return EVENTS.find((e) => e.date === key);
-}
-
-function BookSwapIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M4 4h7v16H4zM13 4h7v16h-7z" stroke="#5a633a" strokeWidth="1.5" strokeLinejoin="round" />
-      <line x1="11" y1="12" x2="13" y2="12" stroke="#5a633a" strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6l-1 14H6L5 6" />
-      <path d="M10 11v6M14 11v6" />
-      <path d="M9 6V4h6v2" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
+import CalendarClient, { type CalendarEvent } from "./CalendarClient";
 
 type UserBook = {
   id: string;
@@ -90,12 +32,6 @@ type SwapWithRelations = {
   receiver: { id: string; nickname: string | null } | null;
 };
 
-const MEMBER_GRADE = {
-  label: "Editorial Fellow",
-  desc: "당신은 지역 도서관의 큐레이터와 같은 안목을 가지고 계시군요.",
-  quote: "책은 단순히 읽는 것이 아니라, 누군가와 그 문장을 나누었을 때 비로소 완성됩니다.",
-};
-
 function SwapCard({ swap, userId }: { swap: SwapWithRelations; userId: string }) {
   const isRequester = swap.requester_id === userId;
   const partner = isRequester ? swap.receiver : swap.requester;
@@ -104,57 +40,109 @@ function SwapCard({ swap, userId }: { swap: SwapWithRelations; userId: string })
   const wantedBook = swap.wanted_book;
   const d = new Date(swap.created_at);
   const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  const isClickable = swap.status === "accepted" || swap.status === "completed";
 
-  return (
-    <div className="border border-neutral/10 bg-white/40 px-4 py-3 flex items-center gap-4">
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: "#ffffff",
+    border: "1px solid #E0E0E0",
+    borderRadius: "12px",
+    cursor: isClickable ? "pointer" : undefined,
+  };
+
+  const inner = (
+    <div
+      className="flex items-center gap-4 px-4 py-3"
+      style={cardStyle}
+    >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
           {book?.cover_image ? (
-            <div className="relative w-9 h-12 flex-shrink-0 overflow-hidden">
+            <div
+              className="relative w-9 h-12 flex-shrink-0 overflow-hidden"
+              style={{ borderRadius: "4px", border: "1px solid #E0E0E0" }}
+            >
               <Image src={highResCover(book.cover_image)!} alt="" fill className="object-cover object-top" sizes="36px" />
             </div>
           ) : (
-            <div className="w-9 h-12 bg-neutral/10 flex-shrink-0" />
+            <div
+              className="w-9 h-12 flex-shrink-0"
+              style={{ backgroundColor: "#a0e4f2", borderRadius: "4px", border: "1px solid #E0E0E0" }}
+            />
           )}
           <div className="min-w-0 max-w-[110px]">
-            <p className="text-xs font-body text-neutral leading-snug line-clamp-2">{book?.title ?? "—"}</p>
+            <p className="text-xs leading-snug line-clamp-2" style={{ color: "#030505" }}>{book?.title ?? "—"}</p>
           </div>
         </div>
         {wantedBook && (
           <>
-            <span className="text-neutral/25 text-xs flex-shrink-0">→</span>
+            <span style={{ color: "#aaaaaa", fontSize: "0.75rem" }}>→</span>
             <div className="flex items-center gap-2 min-w-0">
               {wantedBook.cover_image ? (
-                <div className="relative w-9 h-12 flex-shrink-0 overflow-hidden">
+                <div
+                  className="relative w-9 h-12 flex-shrink-0 overflow-hidden"
+                  style={{ borderRadius: "4px", border: "1px solid #E0E0E0" }}
+                >
                   <Image src={highResCover(wantedBook.cover_image)!} alt="" fill className="object-cover object-top" sizes="36px" />
                 </div>
               ) : (
-                <div className="w-9 h-12 bg-neutral/10 flex-shrink-0" />
+                <div
+                  className="w-9 h-12 flex-shrink-0"
+                  style={{ backgroundColor: "#f7a8c7", borderRadius: "4px", border: "1px solid #E0E0E0" }}
+                />
               )}
               <div className="min-w-0 max-w-[110px]">
-                <p className="text-xs font-body text-neutral leading-snug line-clamp-2">{wantedBook.title}</p>
+                <p className="text-xs leading-snug line-clamp-2" style={{ color: "#030505" }}>{wantedBook.title}</p>
               </div>
             </div>
           </>
         )}
       </div>
       <div className="flex-shrink-0 text-right">
-        <span className={`inline-block text-[9px] tracking-[0.08em] uppercase font-body px-1.5 py-0.5 ${
-          isRequester ? "bg-primary/8 text-primary/60" : "bg-neutral/8 text-neutral/50"
-        }`}>
+        <span
+          style={{
+            display: "inline-block",
+            backgroundColor: isRequester ? "#f4d23d" : "#f5f5f5",
+            border: "1px solid #030505",
+            borderRadius: "9999px",
+            padding: "1px 8px",
+            fontSize: "0.5625rem",
+            fontWeight: 700,
+            color: "#030505",
+          }}
+        >
           {isRequester ? "내가 요청" : "받은 요청"}
         </span>
-        <p className="text-[11px] text-neutral/60 font-body mt-1.5">{partnerName}</p>
-        <p className="text-[9px] text-neutral/35 font-body mt-0.5">{dateStr}</p>
+        <p className="text-xs mt-1" style={{ color: "#555555" }}>{partnerName}</p>
+        <p style={{ fontSize: "0.5625rem", color: "#aaaaaa", marginTop: "2px" }}>{dateStr}</p>
       </div>
     </div>
   );
+
+  if (isClickable) {
+    return (
+      <Link href={`/swap/${swap.id}`} style={{ textDecoration: "none", display: "block" }}>
+        {inner}
+      </Link>
+    );
+  }
+  return inner;
 }
 
 function SwapSection({ title, swaps, userId }: { title: string; swaps: SwapWithRelations[]; userId: string }) {
   return (
     <div className="mb-8">
-      <p className="text-sm font-body text-neutral mb-3">{title}</p>
+      {title && (
+        <p
+          style={{
+            fontSize: "0.8125rem",
+            fontWeight: 700,
+            color: "#030505",
+            marginBottom: "12px",
+          }}
+        >
+          {title}
+        </p>
+      )}
       <div className="flex flex-col gap-2">
         {swaps.map((swap) => (
           <SwapCard key={swap.id} swap={swap} userId={userId} />
@@ -170,16 +158,27 @@ export default async function MyPage() {
   let userBooks: UserBook[] = [];
   let swapCount = 0;
   let mySwaps: SwapWithRelations[] = [];
+  let calendarEvents: CalendarEvent[] = [];
+
+  const now = new Date();
+  const calYear = now.getFullYear();
+  const calMonth = now.getMonth(); // 0-indexed
 
   if (session?.user?.id) {
-    const [booksResult, swapsResult, swapsDataResult] = await Promise.all([
+    const monthFrom = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-01`;
+    const lastDay = new Date(calYear, calMonth + 1, 0).getDate();
+    const monthTo = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+    const [booksResult, swapsResult, swapsDataResult, eventsResult] = await Promise.all([
       supabase.from("user_books").select("id, isbn, title, author, publisher, cover_image, created_at").eq("user_id", session.user.id).order("created_at", { ascending: false }),
       supabase.from("swap_requests").select("id", { count: "exact", head: true }).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`),
       supabase.from("swap_requests").select(`id, status, is_public, created_at, requester_id, receiver_id, offered_book:user_books!offered_book_id(id, title, author, cover_image), wanted_book:user_books!wanted_book_id(id, title, author, cover_image), requester:users!requester_id(id, nickname), receiver:users!receiver_id(id, nickname)`).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`).in("status", ["pending", "accepted", "completed"]).order("created_at", { ascending: false }),
+      supabase.from("calendar_events").select("id, title, date, time").eq("user_id", session.user.id).gte("date", monthFrom).lte("date", monthTo).order("date").order("created_at"),
     ]);
     userBooks = booksResult.data ?? [];
     swapCount = swapsResult.count ?? 0;
     mySwaps = (swapsDataResult.data ?? []) as unknown as SwapWithRelations[];
+    calendarEvents = (eventsResult.data ?? []) as CalendarEvent[];
   }
 
   const displayName = (session?.user as { nickname?: string })?.nickname ?? session?.user?.name ?? "독서가";
@@ -190,146 +189,195 @@ export default async function MyPage() {
   const completedSwaps = mySwaps.filter((s) => s.status === "completed");
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-8 py-10">
+    <div className="max-w-3xl mx-auto px-5 py-10">
       {/* Profile section */}
-      <div className="grid grid-cols-2 gap-12">
-        {/* Left: user info */}
-        <div>
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 bg-white border border-neutral/10 rounded-sm flex flex-col items-center justify-center gap-1 flex-shrink-0">
-              <BookSwapIcon />
-              <span className="text-[7px] tracking-[0.2em] text-primary font-body uppercase">BookSwap</span>
+      <div
+        className="p-6 mb-8"
+        style={{
+          backgroundColor: "#ffffff",
+          border: "1px solid #E0E0E0",
+          borderRadius: "12px",
+          boxShadow: "0px 2px 8px rgba(3,5,5,0.08)",
+        }}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+          {/* Avatar + name */}
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: "#a0e4f2",
+                border: "2px solid #030505",
+                fontFamily: "var(--font-fredoka)",
+                fontSize: "1.5rem",
+                fontWeight: 700,
+                color: "#030505",
+              }}
+            >
+              {displayName[0]?.toUpperCase() ?? "?"}
             </div>
-            <div>
-              <h1 className="font-headline text-2xl text-neutral leading-snug">{displayName}</h1>
-              <p className="text-neutral/45 text-sm font-body mt-0.5">{email}</p>
+            <div className="min-w-0">
+              <h1
+                style={{
+                  fontFamily: "var(--font-fredoka)",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: "#030505",
+                  lineHeight: 1.2,
+                }}
+              >
+                {displayName}
+              </h1>
+              <p style={{ fontSize: "0.75rem", color: "#888888", marginTop: "2px" }}>{email}</p>
             </div>
           </div>
-          <div className="flex gap-8 mt-6">
-            <div>
-              <p className="text-[10px] tracking-[0.15em] uppercase text-neutral/40 font-body">진행한 교환독서</p>
-              <p className="font-body text-xl text-neutral mt-1">{swapCount}회</p>
+
+          {/* Stats */}
+          <div className="flex gap-6 sm:flex-shrink-0">
+            <div
+              className="text-center px-4 py-3"
+              style={{ backgroundColor: "#f5f5f5", borderRadius: "12px", border: "1px solid #E0E0E0" }}
+            >
+              <p
+                style={{ fontFamily: "var(--font-fredoka)", fontSize: "1.75rem", fontWeight: 700, color: "#030505", lineHeight: 1 }}
+              >
+                {swapCount}
+              </p>
+              <p style={{ fontSize: "0.625rem", fontWeight: 700, color: "#888888", marginTop: "4px" }}>교환독서</p>
             </div>
-            <div>
-              <p className="text-[10px] tracking-[0.15em] uppercase text-neutral/40 font-body">등록한 책</p>
-              <p className="font-body text-xl text-neutral mt-1">{userBooks.length}권</p>
+            <div
+              className="text-center px-4 py-3"
+              style={{ backgroundColor: "#f5f5f5", borderRadius: "12px", border: "1px solid #E0E0E0" }}
+            >
+              <p
+                style={{ fontFamily: "var(--font-fredoka)", fontSize: "1.75rem", fontWeight: 700, color: "#030505", lineHeight: 1 }}
+              >
+                {userBooks.length}
+              </p>
+              <p style={{ fontSize: "0.625rem", fontWeight: 700, color: "#888888", marginTop: "4px" }}>등록한 책</p>
             </div>
-          </div>
-          <div className="mt-5 flex gap-2 flex-wrap">
-            <RegisterBookButton />
-            <SwapRequestButton userBooks={userBooks} />
-            <ProfileEditButton />
           </div>
         </div>
 
-        {/* Right: membership + quote */}
-        <div>
-          <div className="border border-neutral/10 bg-white/50 px-5 py-4 rounded-sm">
-            <p className="text-[10px] tracking-[0.2em] uppercase text-primary font-body mb-2">회원 등급</p>
-            <p className="font-headline italic text-neutral text-lg">{MEMBER_GRADE.label}</p>
-            <p className="text-[12px] text-neutral/55 font-body mt-2 leading-relaxed">{MEMBER_GRADE.desc}</p>
-          </div>
-          <blockquote className="font-headline italic text-neutral/70 text-[0.88rem] leading-relaxed mt-5">
-            &ldquo;{MEMBER_GRADE.quote}&rdquo;
-          </blockquote>
-          <p className="text-[9px] tracking-[0.2em] uppercase text-neutral/35 mt-2 font-body">— Bibliotheca Editor</p>
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 flex-wrap mt-5 pt-5" style={{ borderTop: "1px solid #e5e5e5" }}>
+          <RegisterBookButton />
+          <SwapRequestButton userBooks={userBooks} />
+          <ProfileEditButton />
         </div>
       </div>
-
-      {/* Divider */}
-      <div className="w-full h-px bg-neutral/10 my-10" />
 
       {/* My books section */}
       {userBooks.length > 0 && (
         <>
-          <div className="mb-6">
-            <p className="text-sm font-body text-neutral">내 책 목록</p>
+          <div className="flex items-center gap-2 mb-4">
+            <span
+              style={{
+                display: "inline-block",
+                backgroundColor: "#f7a8c7",
+                border: "1.5px solid #030505",
+                borderRadius: "9999px",
+                padding: "3px 12px",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+              }}
+            >
+              내 책 목록
+            </span>
           </div>
-          <div className="grid grid-cols-3 gap-4 mb-10">
+          <div className="grid grid-cols-3 gap-3 mb-10">
             {userBooks.map((book) => (
-              <div key={book.id} className="border border-neutral/10 bg-white/40 px-4 pt-3 pb-4">
-                <div className="flex justify-end mb-3">
+              <div
+                key={book.id}
+                style={{
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #E0E0E0",
+                  borderRadius: "12px",
+                  boxShadow: "0px 2px 8px rgba(3,5,5,0.08)",
+                  padding: "12px",
+                }}
+              >
+                <div className="flex justify-end mb-2">
                   <DeleteBookButton bookId={book.id} />
                 </div>
                 {book.cover_image ? (
-                  <div className="relative w-full aspect-[3/4] mb-3 overflow-hidden">
+                  <div
+                    className="relative w-full aspect-[3/4] mb-3 overflow-hidden"
+                    style={{ borderRadius: "6px", border: "1px solid #E0E0E0" }}
+                  >
                     <Image src={highResCover(book.cover_image)!} alt={book.title} fill className="object-cover object-top" quality={90} />
                   </div>
                 ) : (
-                  <div className="w-full aspect-[3/4] bg-neutral/8 mb-3" />
+                  <div
+                    className="w-full aspect-[3/4] mb-3"
+                    style={{ backgroundColor: "#a0e4f2", borderRadius: "6px", border: "1px solid #E0E0E0" }}
+                  />
                 )}
-                <p className="font-body text-sm text-neutral leading-snug line-clamp-2">{book.title}</p>
-                <p className="text-[11px] text-neutral/45 font-body mt-1">{book.author}</p>
+                <p className="text-sm leading-snug line-clamp-2" style={{ color: "#030505", fontWeight: 600 }}>{book.title}</p>
+                <p style={{ fontSize: "0.6875rem", color: "#888888", marginTop: "2px" }}>{book.author}</p>
               </div>
             ))}
           </div>
-          <div className="w-full h-px bg-neutral/10 mb-10" />
         </>
       )}
 
-      {/* Swap lists */}
-      {(pendingSwaps.length > 0 || acceptedSwaps.length > 0 || completedSwaps.length > 0) && (
+      {/* Active swap lists */}
+      {(pendingSwaps.length > 0 || acceptedSwaps.length > 0) && (
         <>
+          <div className="flex items-center gap-2 mb-4">
+            <span
+              style={{
+                display: "inline-block",
+                backgroundColor: "#a0e4f2",
+                border: "1.5px solid #030505",
+                borderRadius: "9999px",
+                padding: "3px 12px",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+              }}
+            >
+              교환독서 현황
+            </span>
+          </div>
           {pendingSwaps.length > 0 && (
             <SwapSection title="진행 중인 요청" swaps={pendingSwaps} userId={userId} />
           )}
           {acceptedSwaps.length > 0 && (
             <SwapSection title="수락된 교환" swaps={acceptedSwaps} userId={userId} />
           )}
-          {completedSwaps.length > 0 && (
-            <SwapSection title="완료된 교환" swaps={completedSwaps} userId={userId} />
-          )}
-          <div className="w-full h-px bg-neutral/10 mb-10" />
+          <div className="mb-10" style={{ borderTop: "1px solid #e5e5e5" }} />
+        </>
+      )}
+
+      {/* Completed swap lists */}
+      {completedSwaps.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 mb-4">
+            <span
+              style={{
+                display: "inline-block",
+                backgroundColor: "#b8e6b0",
+                border: "1.5px solid #030505",
+                borderRadius: "9999px",
+                padding: "3px 12px",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+              }}
+            >
+              완료된 교환
+            </span>
+          </div>
+          <SwapSection title="" swaps={completedSwaps} userId={userId} />
+          <div className="mb-10" style={{ borderTop: "1px solid #e5e5e5" }} />
         </>
       )}
 
       {/* Calendar section */}
-      <div>
-        <div className="flex items-center justify-between mb-5">
-          <p className="text-sm font-body text-neutral">교환 독서 달력</p>
-          <div className="flex gap-2">
-            <button className="flex items-center gap-1.5 border border-neutral/20 px-3 py-1.5 text-[11px] font-body text-neutral/60 hover:border-neutral/40 transition-colors">
-              <PlusIcon />
-              일정 등록
-            </button>
-            <button className="flex items-center gap-1.5 border border-neutral/20 px-3 py-1.5 text-[11px] font-body text-neutral/60 hover:border-neutral/40 transition-colors">
-              <TrashIcon />
-              일정 삭제
-            </button>
-            <button className="border border-neutral/20 px-2.5 py-1.5 text-neutral/50 hover:border-neutral/40 transition-colors">
-              <ChevronDownIcon />
-            </button>
-          </div>
-        </div>
-
-        <div className="border border-neutral/15 bg-white/40">
-          <div className="grid grid-cols-7 border-b border-neutral/10">
-            {DAY_LABELS.map((label) => (
-              <div key={label} className="py-2.5 text-center text-[10px] tracking-[0.18em] text-neutral/40 font-body">
-                {label}
-              </div>
-            ))}
-          </div>
-          {WEEKS.map((week, wi) => (
-            <div key={wi} className={`grid grid-cols-7${wi > 0 ? " border-t border-neutral/10" : ""}`}>
-              {week.map(({ day, isPrev }, di) => {
-                const event = getEvent(day, isPrev);
-                return (
-                  <div key={di} className={`min-h-[80px] px-2 py-2${di < 6 ? " border-r border-neutral/10" : ""}`}>
-                    <p className={`text-[11px] font-body mb-1.5 ${isPrev ? "text-neutral/25" : "text-neutral/55"}`}>{day}</p>
-                    {event && (
-                      <div className="bg-primary rounded-sm px-1.5 py-1">
-                        <p className="text-[9px] text-secondary font-body leading-tight">{event.time}</p>
-                        <p className="text-[9px] text-secondary font-body leading-tight font-medium">{event.title}</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
+      <CalendarClient
+        initialEvents={calendarEvents}
+        initialYear={calYear}
+        initialMonth={calMonth}
+      />
     </div>
   );
 }

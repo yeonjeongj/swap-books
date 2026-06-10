@@ -47,7 +47,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
           onMouseEnter={() => setHovered(star)}
           onMouseLeave={() => setHovered(0)}
           className="text-2xl leading-none transition-colors"
-          style={{ color: star <= (hovered || value) ? "#5a633a" : "#d1d5db" }}
+          style={{ color: star <= (hovered || value) ? "#f4d23d" : "#dddddd" }}
           aria-label={`${star}점`}
         >
           ★
@@ -57,14 +57,16 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
+const inputClass = "w-full px-3 py-2 text-sm outline-none transition-colors focus:border-[#030505] bg-white";
+const inputStyle = { border: "1.5px solid #dddddd", borderRadius: "8px", color: "#030505" };
+const labelStyle = { fontSize: "0.6875rem", fontWeight: 700 as const, color: "#888888" };
+
 export default function RegisterBookPopup({ onClose, onSuccess }: Props) {
   const [bookQuery, setBookQuery] = useState("");
   const [bookResults, setBookResults] = useState<KakaoBook[]>([]);
   const [selectedBook, setSelectedBook] = useState<KakaoBook | null>(null);
   const [bookSearching, setBookSearching] = useState(false);
-
   const [rating, setRating] = useState(0);
-
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,7 +105,6 @@ export default function RegisterBookPopup({ onClose, onSuccess }: Props) {
     }
     setError(null);
     setSubmitting(true);
-
     try {
       const isbn = selectedBook.isbn.split(" ")[1] || selectedBook.isbn.split(" ")[0];
       const res = await fetch("/api/user-books", {
@@ -118,13 +119,11 @@ export default function RegisterBookPopup({ onClose, onSuccess }: Props) {
           rating: rating || undefined,
         }),
       });
-
       if (!res.ok) {
         const json = await res.json();
         setError(json.error ?? "책 등록에 실패했습니다.");
         return;
       }
-
       onSuccess?.();
       onClose();
     } finally {
@@ -135,20 +134,39 @@ export default function RegisterBookPopup({ onClose, onSuccess }: Props) {
   return (
     <Popup onClose={onClose}>
       <div className="px-7 pt-7 pb-8">
-        <p className="text-[10px] tracking-[0.2em] uppercase text-primary font-body mb-1">
+        <span
+          style={{
+            display: "inline-block",
+            backgroundColor: "#a0e4f2",
+            border: "1.5px solid #030505",
+            borderRadius: "9999px",
+            padding: "3px 12px",
+            fontSize: "0.6875rem",
+            fontWeight: 700,
+            marginBottom: "0.5rem",
+          }}
+        >
           My Books
-        </p>
-        <h2 className="font-headline text-xl text-neutral mb-6">책 등록하기</h2>
+        </span>
+        <h2
+          style={{
+            fontFamily: "var(--font-fredoka)",
+            fontSize: "1.35rem",
+            fontWeight: 700,
+            color: "#030505",
+            marginBottom: "1.5rem",
+          }}
+        >
+          책 등록하기
+        </h2>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           {/* Book search */}
           <div className="relative">
-            <label htmlFor="book-search" className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
-              책 검색
-            </label>
+            <label style={labelStyle} className="block mb-1.5">책 검색</label>
             <div className="flex gap-1.5">
               <div className="relative flex-1">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral/35 pointer-events-none">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#aaaaaa" }}>
                   {selectedBook ? <CheckIcon /> : <SearchIcon />}
                 </div>
                 <input
@@ -158,44 +176,49 @@ export default function RegisterBookPopup({ onClose, onSuccess }: Props) {
                   onChange={(e) => { const v = e.target.value; setBookQuery(v); if (selectedBook) clearBook(); else if (!v.trim()) setBookResults([]); }}
                   onKeyDown={handleSearchKey}
                   placeholder="제목 또는 저자를 검색하세요"
-                  className="w-full border border-neutral/15 bg-white/60 pl-8 pr-8 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors"
+                  className={`${inputClass} pl-8 pr-8`}
+                  style={{ ...inputStyle, borderRadius: "8px 0 0 8px" }}
                   autoComplete="off"
                 />
                 {selectedBook && (
-                  <button type="button" onClick={clearBook} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral/30 hover:text-neutral/60 text-xs">✕</button>
+                  <button type="button" onClick={clearBook} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs" style={{ color: "#aaaaaa" }}>✕</button>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => runSearch(bookQuery)}
                 disabled={!bookQuery.trim() || !!selectedBook}
-                className="border border-neutral/20 px-3 py-2 text-[11px] font-body text-neutral/60 hover:border-neutral/40 hover:text-neutral/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                className="px-3 py-2 text-xs font-bold transition-colors hover:bg-[#f5f5f5] disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                style={{ border: "1.5px solid #dddddd", borderRadius: "0 8px 8px 0", borderLeft: "none", color: "#030505" }}
               >
                 검색
               </button>
             </div>
             {bookSearching && (
-              <p className="text-[10px] text-neutral/40 font-body mt-1">검색 중...</p>
+              <p style={{ fontSize: "0.625rem", color: "#888888", marginTop: "4px" }}>검색 중...</p>
             )}
             {bookResults.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white border border-neutral/15 shadow-sm mt-0.5 max-h-52 overflow-y-auto">
+              <ul
+                className="absolute z-10 w-full bg-white mt-1 max-h-52 overflow-y-auto"
+                style={{ border: "1px solid #E0E0E0", borderRadius: "8px", boxShadow: "0px 2px 8px rgba(3,5,5,0.08)" }}
+              >
                 {bookResults.map((book, i) => (
                   <li key={i}>
                     <button
                       type="button"
                       onClick={() => selectBook(book)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-neutral/5 text-left transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#f5f5f5] text-left transition-colors"
                     >
                       {book.thumbnail ? (
-                        <div className="relative w-8 h-10 flex-shrink-0 overflow-hidden">
+                        <div className="relative w-8 h-10 flex-shrink-0 overflow-hidden" style={{ borderRadius: "4px" }}>
                           <Image src={book.thumbnail} alt="" fill className="object-cover object-top" />
                         </div>
                       ) : (
-                        <div className="w-8 h-10 bg-neutral/10 flex-shrink-0" />
+                        <div className="w-8 h-10 flex-shrink-0" style={{ backgroundColor: "#f5f5f5", borderRadius: "4px" }} />
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-body text-neutral truncate">{book.title}</p>
-                        <p className="text-[11px] text-neutral/50 font-body truncate">{book.authors.join(", ")}</p>
+                        <p className="text-sm truncate" style={{ color: "#030505" }}>{book.title}</p>
+                        <p className="truncate" style={{ fontSize: "0.6875rem", color: "#888888" }}>{book.authors.join(", ")}</p>
                       </div>
                     </button>
                   </li>
@@ -206,21 +229,31 @@ export default function RegisterBookPopup({ onClose, onSuccess }: Props) {
 
           {/* Star rating */}
           <div>
-            <label className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
-              별점
-              <span className="ml-1.5 normal-case tracking-normal text-[9px] text-neutral/30">Optional</span>
+            <label style={labelStyle} className="block mb-1.5">
+              별점{" "}
+              <span style={{ fontSize: "0.625rem", fontWeight: 400, color: "#aaaaaa" }}>Optional</span>
             </label>
             <StarRating value={rating} onChange={setRating} />
           </div>
 
           {error && (
-            <p className="text-[11px] text-red-500 font-body">{error}</p>
+            <p style={{ fontSize: "0.6875rem", color: "#ef4444" }}>{error}</p>
           )}
 
           <button
             type="submit"
             disabled={submitting || !selectedBook}
-            className="mt-1 w-full bg-primary text-secondary text-[10px] tracking-[0.2em] uppercase py-3 font-body hover:bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-1 transition-colors hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: "#f4d23d",
+              border: "2px solid #030505",
+              borderRadius: "9999px",
+              padding: "10px 0",
+              fontWeight: 700,
+              fontSize: "0.875rem",
+              boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
+              color: "#030505",
+            }}
           >
             {submitting ? "등록 중..." : "등록하기"}
           </button>

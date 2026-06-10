@@ -47,6 +47,9 @@ function CheckIcon() {
   );
 }
 
+const inputClass = "w-full px-3 py-2 text-sm outline-none transition-colors focus:border-[#030505] bg-white";
+const labelStyle = { fontSize: "0.6875rem", fontWeight: 700 as const, color: "#888888" };
+
 export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Props) {
   const [bookQuery, setBookQuery] = useState("");
   const [bookResults, setBookResults] = useState<KakaoBook[]>([]);
@@ -61,7 +64,6 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
   const [isPublicRecruit, setIsPublicRecruit] = useState(false);
 
   const [message, setMessage] = useState("");
-
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -149,14 +151,11 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
     }
     setError(null);
     setSubmitting(true);
-
     try {
       let bookId: string;
-
       if (matchedBook) {
         bookId = matchedBook.id;
       } else {
-        // 새 책 등록
         const isbn = selectedBook.isbn.split(" ")[1] || selectedBook.isbn.split(" ")[0];
         const bookRes = await fetch("/api/user-books", {
           method: "POST",
@@ -169,13 +168,11 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
             coverImage: highResCover(selectedBook.thumbnail),
           }),
         });
-
         if (!bookRes.ok) {
           const json = await bookRes.json();
           setError(json.error ?? "책 등록에 실패했습니다.");
           return;
         }
-
         const newBook = await bookRes.json();
         bookId = newBook.id;
       }
@@ -190,13 +187,11 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
           requesterMessage: message.trim() || undefined,
         }),
       });
-
       if (!swapRes.ok) {
         const json = await swapRes.json();
         setError(json.error ?? "교환 요청 생성에 실패했습니다.");
         return;
       }
-
       onSuccess?.();
       onClose();
     } finally {
@@ -204,23 +199,49 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
     }
   }
 
+  const dropdownStyle = {
+    border: "1px solid #E0E0E0",
+    borderRadius: "8px",
+    boxShadow: "0px 2px 8px rgba(3,5,5,0.08)",
+    backgroundColor: "#ffffff",
+  };
+
   return (
     <Popup onClose={onClose}>
       <div className="px-7 pt-7 pb-8">
-        <p className="text-[10px] tracking-[0.2em] uppercase text-primary font-body mb-1">
+        <span
+          style={{
+            display: "inline-block",
+            backgroundColor: "#a0e4f2",
+            border: "1.5px solid #030505",
+            borderRadius: "9999px",
+            padding: "3px 12px",
+            fontSize: "0.6875rem",
+            fontWeight: 700,
+            marginBottom: "0.5rem",
+          }}
+        >
           Book Exchange
-        </p>
-        <h2 className="font-headline text-xl text-neutral mb-6">교환하기</h2>
+        </span>
+        <h2
+          style={{
+            fontFamily: "var(--font-fredoka)",
+            fontSize: "1.35rem",
+            fontWeight: 700,
+            color: "#030505",
+            marginBottom: "1.5rem",
+          }}
+        >
+          교환하기
+        </h2>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           {/* Book search */}
           <div className="relative">
-            <label htmlFor="book-search" className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
-              책 검색
-            </label>
+            <label style={labelStyle} className="block mb-1.5">책 검색</label>
             <div className="flex gap-1.5">
               <div className="relative flex-1">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral/35 pointer-events-none">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#aaaaaa" }}>
                   {selectedBook ? <CheckIcon /> : <SearchIcon />}
                 </div>
                 <input
@@ -230,47 +251,49 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
                   onChange={(e) => { const v = e.target.value; setBookQuery(v); if (selectedBook) clearBook(); else if (!v.trim()) setBookResults([]); }}
                   onKeyDown={handleBookSearchKey}
                   placeholder="제목 또는 저자를 검색하세요"
-                  className="w-full border border-neutral/15 bg-white/60 pl-8 pr-8 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors"
+                  className={`${inputClass} pl-8 pr-8`}
+                  style={{ border: "1.5px solid #dddddd", borderRadius: "8px 0 0 8px", color: "#030505" }}
                   autoComplete="off"
                 />
                 {selectedBook && (
-                  <button type="button" onClick={clearBook} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral/30 hover:text-neutral/60 text-xs">✕</button>
+                  <button type="button" onClick={clearBook} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs" style={{ color: "#aaaaaa" }}>✕</button>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => runBookSearch(bookQuery)}
                 disabled={!bookQuery.trim() || !!selectedBook}
-                className="border border-neutral/20 px-3 py-2 text-[11px] font-body text-neutral/60 hover:border-neutral/40 hover:text-neutral/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                className="px-3 py-2 text-xs font-bold transition-colors hover:bg-[#f5f5f5] disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                style={{ border: "1.5px solid #dddddd", borderRadius: "0 8px 8px 0", borderLeft: "none", color: "#030505" }}
               >
                 검색
               </button>
             </div>
             {bookSearching && (
-              <p className="text-[10px] text-neutral/40 font-body mt-1">검색 중...</p>
+              <p style={{ fontSize: "0.625rem", color: "#888888", marginTop: "4px" }}>검색 중...</p>
             )}
             {matchedBook && (
-              <p className="text-[10px] text-primary/70 font-body mt-1">이미 등록된 책입니다. 기존 정보를 사용합니다.</p>
+              <p style={{ fontSize: "0.625rem", color: "#555555", marginTop: "4px" }}>이미 등록된 책입니다. 기존 정보를 사용합니다.</p>
             )}
             {bookResults.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white border border-neutral/15 shadow-sm mt-0.5 max-h-52 overflow-y-auto">
+              <ul className="absolute z-10 w-full mt-1 max-h-52 overflow-y-auto" style={dropdownStyle}>
                 {bookResults.map((book, i) => (
                   <li key={i}>
                     <button
                       type="button"
                       onClick={() => selectBook(book)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-neutral/5 text-left transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#f5f5f5] text-left transition-colors"
                     >
                       {book.thumbnail ? (
-                        <div className="relative w-8 h-10 flex-shrink-0 overflow-hidden">
+                        <div className="relative w-8 h-10 flex-shrink-0 overflow-hidden" style={{ borderRadius: "4px" }}>
                           <Image src={book.thumbnail} alt="" fill className="object-cover object-top" />
                         </div>
                       ) : (
-                        <div className="w-8 h-10 bg-neutral/10 flex-shrink-0" />
+                        <div className="w-8 h-10 flex-shrink-0" style={{ backgroundColor: "#f5f5f5", borderRadius: "4px" }} />
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-body text-neutral truncate">{book.title}</p>
-                        <p className="text-[11px] text-neutral/50 font-body truncate">{book.authors.join(", ")}</p>
+                        <p className="text-sm truncate" style={{ color: "#030505" }}>{book.title}</p>
+                        <p className="truncate" style={{ fontSize: "0.6875rem", color: "#888888" }}>{book.authors.join(", ")}</p>
                       </div>
                     </button>
                   </li>
@@ -281,9 +304,9 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
 
           {/* Message */}
           <div>
-            <label htmlFor="requester-message" className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
-              하고 싶은 말
-              <span className="ml-1.5 normal-case tracking-normal text-[9px] text-neutral/30">Optional</span>
+            <label htmlFor="requester-message" style={labelStyle} className="block mb-1.5">
+              하고 싶은 말{" "}
+              <span style={{ fontSize: "0.625rem", fontWeight: 400, color: "#aaaaaa" }}>Optional</span>
             </label>
             <textarea
               id="requester-message"
@@ -291,18 +314,19 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="좋아하는 문구나 이 책을 추천하는 이유를 자유롭게 적어주세요"
-              className="w-full border border-neutral/15 bg-white/60 px-3 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors resize-none"
+              className="w-full px-3 py-2 text-sm outline-none transition-colors focus:border-[#030505] bg-white resize-none"
+              style={{ border: "1.5px solid #dddddd", borderRadius: "8px", color: "#030505" }}
             />
           </div>
 
           {/* Partner search */}
           <div className="relative">
-            <label htmlFor="partner-nickname" className="text-[10px] tracking-[0.15em] uppercase text-neutral/45 font-body block mb-1.5">
+            <label htmlFor="partner-nickname" style={labelStyle} className="block mb-1.5">
               교환할 상대의 닉네임 검색
             </label>
             <div className="flex gap-1.5">
               <div className="relative flex-1">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral/35 pointer-events-none">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#aaaaaa" }}>
                   {selectedPartner ? <CheckIcon /> : <SearchIcon />}
                 </div>
                 <input
@@ -312,33 +336,36 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
                   onChange={(e) => { const v = e.target.value; setPartnerQuery(v); if (selectedPartner) clearPartner(); else if (!v.trim()) setPartnerResults([]); }}
                   onKeyDown={handlePartnerSearchKey}
                   placeholder="닉네임을 입력하세요"
-                  className="w-full border border-neutral/15 bg-white/60 pl-8 pr-8 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors"
+                  className={`${inputClass} pl-8 pr-8`}
+                  style={{ border: "1.5px solid #dddddd", borderRadius: "8px 0 0 8px", color: "#030505" }}
                   autoComplete="off"
                 />
                 {selectedPartner && (
-                  <button type="button" onClick={clearPartner} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral/30 hover:text-neutral/60 text-xs">✕</button>
+                  <button type="button" onClick={clearPartner} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs" style={{ color: "#aaaaaa" }}>✕</button>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => runPartnerSearch(partnerQuery)}
                 disabled={!partnerQuery.trim() || !!selectedPartner}
-                className="border border-neutral/20 px-3 py-2 text-[11px] font-body text-neutral/60 hover:border-neutral/40 hover:text-neutral/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                className="px-3 py-2 text-xs font-bold transition-colors hover:bg-[#f5f5f5] disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                style={{ border: "1.5px solid #dddddd", borderRadius: "0 8px 8px 0", borderLeft: "none", color: "#030505" }}
               >
                 검색
               </button>
             </div>
             {partnerSearching && (
-              <p className="text-[10px] text-neutral/40 font-body mt-1">검색 중...</p>
+              <p style={{ fontSize: "0.625rem", color: "#888888", marginTop: "4px" }}>검색 중...</p>
             )}
             {partnerResults.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white border border-neutral/15 shadow-sm mt-0.5 max-h-40 overflow-y-auto">
+              <ul className="absolute z-10 w-full mt-1 max-h-40 overflow-y-auto" style={dropdownStyle}>
                 {partnerResults.map((user) => (
                   <li key={user.id}>
                     <button
                       type="button"
                       onClick={() => selectPartner(user)}
-                      className="w-full px-3 py-2 hover:bg-neutral/5 text-left text-sm font-body text-neutral transition-colors"
+                      className="w-full px-3 py-2 hover:bg-[#f5f5f5] text-left text-sm transition-colors"
+                      style={{ color: "#030505" }}
                     >
                       {user.nickname}
                     </button>
@@ -352,29 +379,47 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
           <button
             type="button"
             onClick={togglePublicRecruit}
-            className={`flex items-center gap-2.5 w-full border px-3 py-2.5 text-left transition-colors ${
-              isPublicRecruit
-                ? "border-primary/40 bg-primary/5 text-primary"
-                : "border-neutral/15 text-neutral/55 hover:border-neutral/30"
-            }`}
+            className="flex items-center gap-2.5 w-full text-left transition-colors"
+            style={{
+              border: isPublicRecruit ? "1.5px solid #030505" : "1.5px solid #dddddd",
+              borderRadius: "8px",
+              padding: "10px 12px",
+              backgroundColor: isPublicRecruit ? "#a0e4f2" : "#ffffff",
+            }}
           >
-            <span className={`w-3.5 h-3.5 border flex-shrink-0 flex items-center justify-center transition-colors ${
-              isPublicRecruit ? "border-primary bg-primary text-secondary" : "border-neutral/30"
-            }`}>
+            <span
+              className="w-3.5 h-3.5 flex-shrink-0 flex items-center justify-center transition-colors"
+              style={{
+                border: isPublicRecruit ? "1.5px solid #030505" : "1.5px solid #aaaaaa",
+                borderRadius: "3px",
+                backgroundColor: isPublicRecruit ? "#030505" : "transparent",
+                color: "#ffffff",
+              }}
+            >
               {isPublicRecruit && <CheckIcon />}
             </span>
-            <span className="text-[11px] font-body">파트너 공개 모집하기</span>
-            <span className="ml-auto text-[9px] tracking-[0.1em] text-neutral/35 font-body normal-case">특정 상대 없이 공개 요청</span>
+            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#030505" }}>파트너 공개 모집하기</span>
+            <span className="ml-auto" style={{ fontSize: "0.625rem", color: "#888888" }}>특정 상대 없이 공개 요청</span>
           </button>
 
           {error && (
-            <p className="text-[11px] text-red-500 font-body">{error}</p>
+            <p style={{ fontSize: "0.6875rem", color: "#ef4444" }}>{error}</p>
           )}
 
           <button
             type="submit"
             disabled={submitting || !selectedBook || (!selectedPartner && !isPublicRecruit)}
-            className="mt-1 w-full bg-primary text-secondary text-[10px] tracking-[0.2em] uppercase py-3 font-body hover:bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-1 transition-colors hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: "#f4d23d",
+              border: "2px solid #030505",
+              borderRadius: "9999px",
+              padding: "10px 0",
+              fontWeight: 700,
+              fontSize: "0.875rem",
+              boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
+              color: "#030505",
+            }}
           >
             {submitting ? "처리 중..." : "교환하기"}
           </button>

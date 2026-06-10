@@ -4,24 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import RegisterBookPopup from "@/components/RegisterBookPopup";
 
-function PlusIcon() {
-  return (
-    <svg
-      width="11"
-      height="11"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-
 export default function RegisterBookButton() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -30,10 +12,19 @@ export default function RegisterBookButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 border border-neutral/20 px-3 py-1.5 text-[11px] font-body text-neutral/60 hover:border-neutral/40 transition-colors"
+        className="transition-colors hover:brightness-95"
+        style={{
+          backgroundColor: "#f4d23d",
+          border: "2px solid #030505",
+          borderRadius: "9999px",
+          padding: "7px 16px",
+          fontWeight: 700,
+          fontSize: "0.75rem",
+          boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
+          color: "#030505",
+        }}
       >
-        <PlusIcon />
-        책 등록하기
+        + 책 등록하기
       </button>
       {open && (
         <RegisterBookPopup
