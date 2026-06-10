@@ -14,6 +14,8 @@ type BookDetail = {
 type SwapData = {
   id: string;
   status: string;
+  requester_id: string;
+  receiver_id: string | null;
   offered_book: BookDetail;
   wanted_book: BookDetail | null;
 };
@@ -40,14 +42,15 @@ type ReadingNote = {
 
 type Props = { swapId: string; currentUserId: string | null };
 
-const AVATAR_COLORS = ["#5a633a", "#3e432e", "#7a6a52", "#4a5a3a"];
+const COVER_COLORS = ["#a0e4f2", "#f7a8c7", "#f4d23d", "#b8e6b0"];
 
 function getInitials(name: string) {
   return name ? name.charAt(0).toUpperCase() : "?";
 }
 
 function getAvatarColor(name: string) {
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+  const colors = ["#a0e4f2", "#f7a8c7", "#f4d23d", "#b8e6b0"];
+  return colors[name.charCodeAt(0) % colors.length];
 }
 
 function PencilIcon() {
@@ -91,57 +94,68 @@ function BookCover({ coverImage, title, color }: { coverImage: string | null; ti
   const src = highResCover(coverImage);
   if (src) {
     return (
-      <div className="relative w-full aspect-[3/4] overflow-hidden">
+      <div
+        className="relative w-full aspect-[3/4] overflow-hidden"
+        style={{ borderRadius: "8px", border: "1px solid #E0E0E0" }}
+      >
         <Image src={src} alt={title} fill className="object-cover object-top" quality={90} />
       </div>
     );
   }
   return (
-    <div className="w-full aspect-[3/4] flex flex-col items-center justify-center gap-3" style={{ backgroundColor: color }}>
-      <svg width="68" height="68" viewBox="0 0 68 68" fill="none" aria-hidden="true">
-        <path d="M34 10C34 10 16 15 16 34C16 50 34 58 34 58C34 58 52 50 52 34C52 15 34 10 34 10Z" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
-        <path d="M19 22L34 12L34 56C34 56 19 48 19 34Z" fill="rgba(255,255,255,0.12)" />
-        <path d="M49 22L34 12L34 56C34 56 49 48 49 34Z" fill="rgba(255,255,255,0.08)" />
-        <line x1="34" y1="12" x2="34" y2="56" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-      </svg>
-      <span className="text-white/40 text-[9px] tracking-[0.35em] uppercase font-body">BookSwap</span>
+    <div
+      className="w-full aspect-[3/4] flex flex-col items-center justify-center gap-2"
+      style={{ backgroundColor: color, borderRadius: "8px", border: "1px solid #E0E0E0" }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-fredoka)",
+          fontSize: "0.625rem",
+          fontWeight: 700,
+          color: "#030505",
+          letterSpacing: "0.1em",
+        }}
+      >
+        Swap Books
+      </span>
     </div>
   );
 }
 
-function CommentItem({
-  comment,
-  onDelete,
-}: {
-  comment: NoteComment;
-  onDelete?: () => void;
-}) {
+function CommentItem({ comment, onDelete }: { comment: NoteComment; onDelete?: () => void }) {
   const name = comment.author?.nickname ?? "독자";
   return (
     <div className="flex items-start gap-2.5">
       <div
-        className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[9px] text-secondary font-body font-semibold flex-shrink-0 mt-0.5"
-        style={{ backgroundColor: getAvatarColor(name) }}
+        className="w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+        style={{
+          backgroundColor: getAvatarColor(name),
+          border: "1px solid #030505",
+          fontSize: "0.5625rem",
+          fontWeight: 700,
+          color: "#030505",
+        }}
       >
         {getInitials(name)}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[11px] font-body font-medium text-neutral">{name}</span>
-          <span className="text-[10px] text-neutral/35 font-body" suppressHydrationWarning>
+          <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#030505" }}>{name}</span>
+          <span style={{ fontSize: "0.625rem", color: "#aaaaaa" }} suppressHydrationWarning>
             {new Date(comment.created_at).toLocaleDateString("ko-KR")}
           </span>
           {onDelete && (
             <button
               onClick={onDelete}
-              className="ml-auto w-5 h-5 flex items-center justify-center text-neutral/25 hover:text-red-400 transition-colors flex-shrink-0"
+              className="ml-auto w-5 h-5 flex items-center justify-center transition-colors hover:text-red-400 flex-shrink-0"
+              style={{ color: "#aaaaaa" }}
               aria-label="댓글 삭제"
             >
               <TrashIcon />
             </button>
           )}
         </div>
-        <p className="text-[11.5px] text-neutral/65 font-body leading-relaxed">{comment.text}</p>
+        <p style={{ fontSize: "0.75rem", color: "#555555", lineHeight: 1.5 }}>{comment.text}</p>
       </div>
     </div>
   );
@@ -177,17 +191,29 @@ function InlineCommentForm({
           if (e.key === "Escape") onCancel();
         }}
         placeholder={placeholder}
-        className="w-full border border-neutral/15 bg-white/60 px-3 py-2 text-xs font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors resize-none"
+        className="w-full px-3 py-2 text-xs outline-none transition-colors focus:border-[#030505] bg-white resize-none"
+        style={{ border: "1.5px solid #dddddd", borderRadius: "8px", color: "#030505" }}
       />
       <div className="flex gap-1.5 justify-end">
-        <button type="button" onClick={onCancel} className="px-3 py-1.5 text-[10px] font-body text-neutral/50 hover:text-neutral/70 transition-colors">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-3 py-1.5 text-xs transition-colors hover:bg-[#f5f5f5]"
+          style={{ color: "#888888" }}
+        >
           취소
         </button>
         <button
           type="button"
           onClick={onSubmit}
           disabled={submitting || !value.trim()}
-          className="px-3 py-1.5 bg-primary text-secondary text-[10px] tracking-[0.15em] uppercase font-body hover:bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 text-xs font-bold transition-colors hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: "#f4d23d",
+            border: "1.5px solid #030505",
+            borderRadius: "9999px",
+            color: "#030505",
+          }}
         >
           {submitting ? "..." : "등록"}
         </button>
@@ -241,9 +267,7 @@ function NoteCard({
     if (!confirm(msg)) return;
     setDeletingId(commentId);
     try {
-      const res = await fetch(`/api/reading-notes/${note.id}/comments/${commentId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/reading-notes/${note.id}/comments/${commentId}`, { method: "DELETE" });
       if (res.ok) onRefresh();
     } finally {
       setDeletingId(null);
@@ -251,15 +275,39 @@ function NoteCard({
   }
 
   return (
-    <div>
+    <div
+      style={{
+        backgroundColor: "#ffffff",
+        border: "1px solid #E0E0E0",
+        borderRadius: "12px",
+        padding: "1rem",
+      }}
+    >
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-neutral/50 text-sm font-body tabular-nums">{note.page}p</span>
-        <div className="flex-1 h-px bg-neutral/15" />
-        <span className="text-[10px] text-neutral/35 font-body">{note.author?.nickname ?? "독자"}</span>
+        <span
+          style={{
+            fontFamily: "var(--font-fredoka)",
+            fontSize: "1.25rem",
+            fontWeight: 700,
+            color: "#030505",
+          }}
+        >
+          {note.page}p
+        </span>
+        <div className="flex-1 h-px" style={{ backgroundColor: "#e5e5e5" }} />
+        <span style={{ fontSize: "0.625rem", color: "#aaaaaa" }}>{note.author?.nickname ?? "독자"}</span>
       </div>
 
       {note.quote && (
-        <blockquote className="font-headline italic text-neutral text-[1.05rem] leading-relaxed mb-4">
+        <blockquote
+          style={{
+            fontFamily: "var(--font-fredoka)",
+            fontSize: "1rem",
+            color: "#030505",
+            lineHeight: 1.5,
+            marginBottom: "1rem",
+          }}
+        >
           &ldquo;{note.quote}&rdquo;
         </blockquote>
       )}
@@ -270,7 +318,8 @@ function NoteCard({
           <img
             src={note.image_url}
             alt=""
-            className="max-h-64 max-w-full object-contain rounded-sm border border-neutral/10"
+            className="max-h-64 max-w-full object-contain"
+            style={{ borderRadius: "8px", border: "1.5px solid #e5e5e5" }}
           />
         </div>
       )}
@@ -279,7 +328,14 @@ function NoteCard({
         {levelOne.map((comment) => (
           <div
             key={comment.id}
-            className={`bg-white/60 border border-neutral/8 rounded-sm px-4 py-3 transition-opacity ${deletingId === comment.id ? "opacity-40" : ""}`}
+            className="px-3 py-2.5"
+            style={{
+              backgroundColor: "#f5f5f5",
+              border: "1px solid #e5e5e5",
+              borderRadius: "8px",
+              transition: "opacity 0.15s",
+              opacity: deletingId === comment.id ? 0.4 : 1,
+            }}
           >
             <CommentItem
               comment={comment}
@@ -293,9 +349,9 @@ function NoteCard({
         ))}
 
         {levelTwo.length > 0 && (
-          <div className="ml-4 pl-3 border-l border-neutral/10 space-y-3">
+          <div className="ml-4 pl-3 space-y-2" style={{ borderLeft: "2px solid #e5e5e5" }}>
             {levelTwo.map((comment) => (
-              <div key={comment.id} className={deletingId === comment.id ? "opacity-40" : ""}>
+              <div key={comment.id} style={{ opacity: deletingId === comment.id ? 0.4 : 1 }}>
                 <CommentItem
                   comment={comment}
                   onDelete={
@@ -320,7 +376,8 @@ function NoteCard({
         ) : (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 text-[10px] text-neutral/40 hover:text-neutral/60 font-body tracking-wide transition-colors"
+            className="flex items-center gap-1.5 transition-colors"
+            style={{ fontSize: "0.625rem", color: "#aaaaaa" }}
           >
             <CommentIcon />
             댓글 달기
@@ -331,29 +388,19 @@ function NoteCard({
   );
 }
 
-const COVER_COLORS = ["#3a4430", "#6b7a52", "#4a5a3a", "#7a6a52"];
-
-function AddNoteForm({
-  swapId,
-  bookId,
-  onAdded,
-}: {
-  swapId: string;
-  bookId: string;
-  onAdded: () => void;
-}) {
+function AddNoteForm({ swapId, bookId, onAdded }: { swapId: string; bookId: string; onAdded: () => void }) {
   const [page, setPage] = useState("");
   const [quote, setQuote] = useState("");
   const [comment, setComment] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => { if (imagePreview) URL.revokeObjectURL(imagePreview); };
   }, [imagePreview]);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
@@ -378,16 +425,12 @@ function AddNoteForm({
     }
     setError(null);
     setSubmitting(true);
-
     try {
       let imageUrl: string | undefined;
       if (imageFile) {
         const fd = new FormData();
         fd.append("file", imageFile);
-        const uploadRes = await fetch("/api/reading-notes/upload", {
-          method: "POST",
-          body: fd,
-        });
+        const uploadRes = await fetch("/api/reading-notes/upload", { method: "POST", body: fd });
         if (!uploadRes.ok) {
           setError("이미지 업로드에 실패했습니다.");
           return;
@@ -422,13 +465,25 @@ function AddNoteForm({
     }
   }
 
+  const inputStyle = { border: "1px solid #E0E0E0", borderRadius: "8px", color: "#030505" };
+  const labelStyle = { fontSize: "0.6875rem", fontWeight: 700 as const, color: "#888888" };
+
   return (
-    <form onSubmit={handleSubmit} className="border border-neutral/15 bg-white/50 p-4 rounded-sm mb-6">
-      <p className="text-[10px] tracking-[0.2em] uppercase text-neutral/45 font-body mb-4">독서 노트 등록</p>
+    <form
+      onSubmit={handleSubmit}
+      className="p-4 mb-6"
+      style={{
+        backgroundColor: "#f5f5f5",
+        border: "1px solid #E0E0E0",
+        borderRadius: "12px",
+        boxShadow: "0px 2px 8px rgba(3,5,5,0.08)",
+      }}
+    >
+      <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#030505", marginBottom: "1rem" }}>독서 노트 등록</p>
 
       <div className="mb-3">
-        <label className="text-[10px] tracking-[0.1em] uppercase text-neutral/40 font-body block mb-1.5">
-          페이지 <span className="text-red-400">*</span>
+        <label style={labelStyle} className="block mb-1.5">
+          페이지 <span style={{ color: "#ef4444" }}>*</span>
         </label>
         <input
           type="number"
@@ -436,48 +491,46 @@ function AddNoteForm({
           value={page}
           onChange={(e) => setPage(e.target.value)}
           placeholder="페이지 번호"
-          className="w-24 border border-neutral/15 bg-white/60 px-3 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors"
+          className="w-24 px-3 py-2 text-sm outline-none transition-colors focus:border-[#030505] bg-white"
+          style={inputStyle}
         />
       </div>
 
       <div className="mb-3">
-        <label className="text-[10px] tracking-[0.1em] uppercase text-neutral/40 font-body block mb-1.5">
-          구간 문구
-          <span className="ml-1.5 normal-case tracking-normal text-[9px] text-neutral/30">Optional</span>
+        <label style={labelStyle} className="block mb-1.5">
+          구간 문구{" "}
+          <span style={{ fontSize: "0.625rem", fontWeight: 400, color: "#aaaaaa" }}>Optional</span>
         </label>
         <textarea
           rows={2}
           value={quote}
           onChange={(e) => setQuote(e.target.value)}
           placeholder="마음에 드는 문구를 적어주세요"
-          className="w-full border border-neutral/15 bg-white/60 px-3 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors resize-none"
+          className="w-full px-3 py-2 text-sm outline-none transition-colors focus:border-[#030505] bg-white resize-none"
+          style={inputStyle}
         />
       </div>
 
       <div className="mb-3">
-        <label className="text-[10px] tracking-[0.1em] uppercase text-neutral/40 font-body block mb-1.5">
-          이미지 첨부
-          <span className="ml-1.5 normal-case tracking-normal text-[9px] text-neutral/30">Optional</span>
+        <label style={labelStyle} className="block mb-1.5">
+          이미지 첨부{" "}
+          <span style={{ fontSize: "0.625rem", fontWeight: 400, color: "#aaaaaa" }}>Optional</span>
         </label>
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          className="hidden"
-        />
+        <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
         {imagePreview ? (
           <div className="relative inline-block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={imagePreview}
               alt=""
-              className="max-h-36 max-w-full object-contain rounded-sm border border-neutral/15"
+              className="max-h-36 max-w-full object-contain"
+              style={{ borderRadius: "8px", border: "1px solid #E0E0E0" }}
             />
             <button
               type="button"
               onClick={removeImage}
-              className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center bg-neutral/60 text-white text-[10px] rounded-full hover:bg-neutral/80 transition-colors"
+              className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-full text-white text-xs transition-colors hover:opacity-80"
+              style={{ backgroundColor: "#030505" }}
             >
               ✕
             </button>
@@ -486,7 +539,13 @@ function AddNoteForm({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 border border-neutral/20 px-3 py-2 text-[11px] font-body text-neutral/55 hover:border-neutral/40 hover:text-neutral/75 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-[#eeeeee]"
+            style={{
+              border: "1px solid #E0E0E0",
+              borderRadius: "8px",
+              backgroundColor: "#ffffff",
+              color: "#555555",
+            }}
           >
             <ImageIcon />
             이미지 선택
@@ -495,25 +554,36 @@ function AddNoteForm({
       </div>
 
       <div className="mb-4">
-        <label className="text-[10px] tracking-[0.1em] uppercase text-neutral/40 font-body block mb-1.5">
-          코멘트
-          <span className="ml-1.5 normal-case tracking-normal text-[9px] text-neutral/30">Optional</span>
+        <label style={labelStyle} className="block mb-1.5">
+          코멘트{" "}
+          <span style={{ fontSize: "0.625rem", fontWeight: 400, color: "#aaaaaa" }}>Optional</span>
         </label>
         <textarea
           rows={2}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           placeholder="이 구간에 대한 생각을 적어주세요"
-          className="w-full border border-neutral/15 bg-white/60 px-3 py-2 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors resize-none"
+          className="w-full px-3 py-2 text-sm outline-none transition-colors focus:border-[#030505] bg-white resize-none"
+          style={inputStyle}
         />
       </div>
 
-      {error && <p className="text-[11px] text-red-500 font-body mb-3">{error}</p>}
+      {error && <p style={{ fontSize: "0.6875rem", color: "#ef4444", marginBottom: "12px" }}>{error}</p>}
 
       <button
         type="submit"
         disabled={submitting}
-        className="flex items-center gap-2 bg-primary text-secondary text-[10px] tracking-[0.18em] uppercase px-4 py-2.5 hover:bg-tertiary transition-colors disabled:opacity-50"
+        className="flex items-center gap-2 transition-colors hover:brightness-95 disabled:opacity-50"
+        style={{
+          backgroundColor: "#f4d23d",
+          border: "2px solid #030505",
+          borderRadius: "9999px",
+          padding: "8px 20px",
+          fontWeight: 700,
+          fontSize: "0.8125rem",
+          boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
+          color: "#030505",
+        }}
       >
         <PencilIcon />
         {submitting ? "등록 중..." : "등록하기"}
@@ -529,11 +599,29 @@ export default function SwapDetail({ swapId, currentUserId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showAddNote, setShowAddNote] = useState(false);
+  const [finishing, setFinishing] = useState(false);
 
   const fetchNotes = useCallback(async () => {
     const res = await fetch(`/api/reading-notes?swapId=${swapId}`);
     if (res.ok) setNotes(await res.json());
   }, [swapId]);
+
+  async function handleFinish() {
+    if (!confirm("교환독서를 완료 처리하시겠습니까?")) return;
+    setFinishing(true);
+    try {
+      const res = await fetch(`/api/swaps/${swapId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "completed" }),
+      });
+      if (res.ok) {
+        setSwap((prev) => prev ? { ...prev, status: "completed" } : null);
+      }
+    } finally {
+      setFinishing(false);
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -556,16 +644,16 @@ export default function SwapDetail({ swapId, currentUserId }: Props) {
 
   if (loading) {
     return (
-      <div className="w-full max-w-4xl mx-auto px-8 py-20 text-center">
-        <p className="text-neutral/40 text-sm font-body">불러오는 중...</p>
+      <div className="max-w-3xl mx-auto px-5 py-20 text-center">
+        <p style={{ color: "#888888", fontSize: "0.875rem" }}>불러오는 중...</p>
       </div>
     );
   }
 
   if (error || !swap) {
     return (
-      <div className="w-full max-w-4xl mx-auto px-8 py-20 text-center">
-        <p className="text-neutral/40 text-sm font-body">{error ?? "교환을 찾을 수 없습니다."}</p>
+      <div className="max-w-3xl mx-auto px-5 py-20 text-center">
+        <p style={{ color: "#888888", fontSize: "0.875rem" }}>{error ?? "교환을 찾을 수 없습니다."}</p>
       </div>
     );
   }
@@ -575,67 +663,159 @@ export default function SwapDetail({ swapId, currentUserId }: Props) {
   const bookNotes = notes.filter((n) => n.book_id === book.id);
   const coverColor = COVER_COLORS[activeIndex % COVER_COLORS.length];
   const isAccepted = swap.status === "accepted";
+  const isCompleted = swap.status === "completed";
+  const isParticipant =
+    currentUserId !== null &&
+    (swap.requester_id === currentUserId || swap.receiver_id === currentUserId);
 
   return (
     <div className="w-full">
-      <div className="border-b border-neutral/10">
-        <div className="max-w-4xl mx-auto px-8 flex">
+      {/* Tab navigation */}
+      <div style={{ borderBottom: "1px solid #E0E0E0", backgroundColor: "#ffffff" }}>
+        <div className="max-w-3xl mx-auto px-5 flex">
           {tabs.map((b, i) => (
             <button
               key={b.id}
               onClick={() => { setActiveIndex(i); setShowAddNote(false); }}
-              className={`py-4 mr-8 text-[10px] tracking-[0.22em] uppercase transition-colors ${
-                activeIndex === i
-                  ? "text-neutral border-b-2 border-neutral -mb-px"
-                  : "text-neutral/35 hover:text-neutral/55"
-              }`}
+              className="py-4 mr-6 text-xs font-bold transition-colors"
+              style={{
+                color: activeIndex === i ? "#030505" : "#aaaaaa",
+                borderBottom: activeIndex === i ? "3px solid #030505" : "3px solid transparent",
+                marginBottom: "-2px",
+                fontFamily: activeIndex === i ? "var(--font-fredoka)" : undefined,
+              }}
             >
-              {b.title.toUpperCase()}
+              {b.title.length > 20 ? b.title.slice(0, 20) + "…" : b.title}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-8 py-10 grid grid-cols-[5fr_7fr] gap-12">
-        <div>
-          <BookCover coverImage={book.cover_image} title={book.title} color={coverColor} />
-          <h1 className="font-headline text-[1.75rem] text-neutral mt-5 leading-snug">{book.title}</h1>
-          <p className="text-neutral/45 text-sm mt-1.5 font-body">{book.author}</p>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-7">
-            <p className="text-[10px] tracking-[0.28em] uppercase text-neutral/45 font-body">Reading Note</p>
-            {isAccepted && (
-              <button
-                onClick={() => setShowAddNote((v) => !v)}
-                className="flex items-center gap-2 bg-primary text-secondary text-[10px] tracking-[0.18em] uppercase px-4 py-2.5 hover:bg-tertiary transition-colors"
-              >
-                <PencilIcon />
-                {showAddNote ? "취소" : "등록하기"}
-              </button>
-            )}
+      <div className="max-w-3xl mx-auto px-5 py-10">
+        <div className="grid grid-cols-[5fr_7fr] gap-10">
+          {/* Book cover + info */}
+          <div>
+            <BookCover coverImage={book.cover_image} title={book.title} color={coverColor} />
+            <h1
+              style={{
+                fontFamily: "var(--font-fredoka)",
+                fontSize: "1.5rem",
+                fontWeight: 700,
+                color: "#030505",
+                lineHeight: 1.2,
+                marginTop: "1rem",
+              }}
+            >
+              {book.title}
+            </h1>
+            <p style={{ fontSize: "0.875rem", color: "#888888", marginTop: "4px" }}>{book.author}</p>
           </div>
 
-          {showAddNote && (
-            <AddNoteForm
-              swapId={swapId}
-              bookId={book.id}
-              onAdded={() => { fetchNotes(); setShowAddNote(false); }}
-            />
-          )}
-
-          {bookNotes.length === 0 ? (
-            <p className="text-[12px] text-neutral/35 font-body">아직 등록된 노트가 없습니다.</p>
-          ) : (
-            <div className="flex flex-col gap-9">
-              {bookNotes.map((note) => (
-                <NoteCard key={note.id} note={note} currentUserId={currentUserId} onRefresh={fetchNotes} />
-              ))}
+          {/* Reading notes */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <span
+                style={{
+                  display: "inline-block",
+                  backgroundColor: "#a0e4f2",
+                  border: "1.5px solid #030505",
+                  borderRadius: "9999px",
+                  padding: "3px 12px",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                }}
+              >
+                Reading Note
+              </span>
+              {isAccepted && (
+                <button
+                  onClick={() => setShowAddNote((v) => !v)}
+                  className="flex items-center gap-2 transition-colors hover:brightness-95"
+                  style={{
+                    backgroundColor: showAddNote ? "#f5f5f5" : "#f4d23d",
+                    border: "1.5px solid #030505",
+                    borderRadius: "9999px",
+                    padding: "6px 14px",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
+                    color: "#030505",
+                  }}
+                >
+                  <PencilIcon />
+                  {showAddNote ? "취소" : "등록하기"}
+                </button>
+              )}
             </div>
-          )}
+
+            {showAddNote && (
+              <AddNoteForm
+                swapId={swapId}
+                bookId={book.id}
+                onAdded={() => { fetchNotes(); setShowAddNote(false); }}
+              />
+            )}
+
+            {bookNotes.length === 0 ? (
+              <p style={{ fontSize: "0.8125rem", color: "#aaaaaa" }}>아직 등록된 노트가 없습니다.</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {bookNotes.map((note) => (
+                  <NoteCard key={note.id} note={note} currentUserId={currentUserId} onRefresh={fetchNotes} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Bottom CTA — finish swap */}
+      {(isParticipant && isAccepted) || isCompleted ? (
+        <div
+          className="max-w-3xl mx-auto px-5 pb-14 flex flex-col items-center gap-3"
+          style={{ borderTop: "1px solid #e5e5e5", paddingTop: "2.5rem" }}
+        >
+          {isCompleted ? (
+            <>
+              <span
+                style={{
+                  backgroundColor: "#b8e6b0",
+                  border: "2px solid #030505",
+                  borderRadius: "9999px",
+                  padding: "8px 24px",
+                  fontSize: "0.875rem",
+                  fontWeight: 700,
+                  color: "#030505",
+                  boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
+                }}
+              >
+                ✓ 교환독서 완료
+              </span>
+              <p style={{ fontSize: "0.75rem", color: "#888888" }}>함께 읽어주셔서 감사해요</p>
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize: "0.8125rem", color: "#888888" }}>교환독서를 모두 마무리하셨나요?</p>
+              <button
+                onClick={handleFinish}
+                disabled={finishing}
+                className="flex items-center gap-2 transition-colors hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: "#f4d23d",
+                  border: "2px solid #030505",
+                  borderRadius: "9999px",
+                  padding: "12px 32px",
+                  fontSize: "0.9375rem",
+                  fontWeight: 700,
+                  color: "#030505",
+                  boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
+                }}
+              >
+                {finishing ? "처리 중…" : "교환 완료하기"}
+              </button>
+            </>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

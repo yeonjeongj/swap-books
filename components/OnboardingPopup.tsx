@@ -62,14 +62,35 @@ export default function OnboardingPopup({
 
   return (
     <Popup onClose={onClose}>
-      <div className="px-8 py-10">
-        <p className="text-[10px] tracking-[0.28em] uppercase text-neutral/40 font-body mb-1">
+      <div className="px-7 py-8">
+        <span
+          style={{
+            display: "inline-block",
+            backgroundColor: "#a0e4f2",
+            border: "1.5px solid #030505",
+            borderRadius: "9999px",
+            padding: "3px 12px",
+            fontSize: "0.6875rem",
+            fontWeight: 700,
+            marginBottom: "0.5rem",
+          }}
+        >
           Profile
-        </p>
-        <h2 className="font-headline text-[1.4rem] text-neutral mb-6">{title}</h2>
+        </span>
+        <h2
+          style={{
+            fontFamily: "var(--font-fredoka)",
+            fontSize: "1.4rem",
+            fontWeight: 700,
+            color: "#030505",
+            marginBottom: "1.5rem",
+          }}
+        >
+          {title}
+        </h2>
 
         {/* Avatar upload */}
-        <div className="flex justify-center mb-7">
+        <div className="flex justify-center mb-6">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -78,7 +99,10 @@ export default function OnboardingPopup({
             aria-label="프로필 이미지 변경"
           >
             {avatarUrl ? (
-              <div className="w-[72px] h-[72px] rounded-full overflow-hidden ring-2 ring-neutral/10">
+              <div
+                className="w-[72px] h-[72px] rounded-full overflow-hidden"
+                style={{ border: "2px solid #030505" }}
+              >
                 <Image
                   src={avatarUrl}
                   alt="프로필 이미지"
@@ -88,12 +112,15 @@ export default function OnboardingPopup({
                 />
               </div>
             ) : (
-              <div className="w-[72px] h-[72px] rounded-full bg-primary/15 flex items-center justify-center text-2xl text-primary font-headline">
+              <div
+                className="w-[72px] h-[72px] rounded-full flex items-center justify-center text-2xl font-bold"
+                style={{ backgroundColor: "#a0e4f2", border: "2px solid #030505", color: "#030505", fontFamily: "var(--font-fredoka)" }}
+              >
                 {nickname?.[0]?.toUpperCase() ?? "?"}
               </div>
             )}
             <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              <span className="text-[9px] text-white font-body tracking-wide">
+              <span style={{ fontSize: "0.6875rem", color: "#ffffff" }}>
                 {uploading ? "..." : "변경"}
               </span>
             </div>
@@ -111,9 +138,9 @@ export default function OnboardingPopup({
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="nickname"
-              className="text-[10px] tracking-[0.2em] uppercase text-neutral/50 font-body"
+              style={{ fontSize: "0.6875rem", fontWeight: 700, color: "#888888" }}
             >
-              닉네임 <span className="text-primary">*</span>
+              닉네임 <span style={{ color: "#030505" }}>*</span>
             </label>
             <input
               id="nickname"
@@ -125,17 +152,33 @@ export default function OnboardingPopup({
               }}
               maxLength={20}
               placeholder="닉네임을 입력하세요"
-              className="bg-white/60 border border-neutral/15 px-4 py-2.5 text-sm font-body text-neutral placeholder:text-neutral/30 focus:outline-none focus:border-neutral/40 transition-colors"
+              className="w-full px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#030505]"
+              style={{
+                border: "1.5px solid #dddddd",
+                borderRadius: "8px",
+                color: "#030505",
+                backgroundColor: "#ffffff",
+              }}
             />
             {error && (
-              <p className="text-[11px] text-red-400 font-body">{error}</p>
+              <p style={{ fontSize: "0.6875rem", color: "#ef4444" }}>{error}</p>
             )}
           </div>
 
           <button
             type="submit"
             disabled={loading || uploading || !nickname.trim()}
-            className="mt-2 bg-primary text-secondary text-[10px] tracking-[0.22em] uppercase px-6 py-3 hover:bg-tertiary transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-body"
+            className="mt-1 transition-colors hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: "#f4d23d",
+              border: "2px solid #030505",
+              borderRadius: "9999px",
+              padding: "10px 24px",
+              fontWeight: 700,
+              fontSize: "0.875rem",
+              boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
+              color: "#030505",
+            }}
           >
             {loading ? "저장 중..." : "저장하기"}
           </button>

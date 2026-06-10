@@ -14,7 +14,16 @@ export default function ProfileEditButton() {
     <>
       <button
         onClick={() => setShow(true)}
-        className="flex items-center gap-1.5 border border-neutral/20 px-3 py-1.5 text-[11px] font-body text-neutral/60 hover:border-neutral/40 hover:text-neutral/80 transition-colors"
+        className="transition-colors hover:bg-[#f5f5f5]"
+        style={{
+          backgroundColor: "#ffffff",
+          border: "1.5px solid #dddddd",
+          borderRadius: "9999px",
+          padding: "7px 16px",
+          fontWeight: 600,
+          fontSize: "0.75rem",
+          color: "#555555",
+        }}
       >
         프로필 수정
       </button>

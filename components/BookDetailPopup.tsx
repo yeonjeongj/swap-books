@@ -12,23 +12,44 @@ type Props = {
 export default function BookDetailPopup({ onClose, quote, reason, userNickname }: Props) {
   return (
     <Popup onClose={onClose}>
-      <div className="px-7 pt-8 pb-7">
+      <div className="px-6 pt-7 pb-6">
         {quote && (
-          <blockquote className="font-headline italic text-neutral text-[1.15rem] leading-relaxed mb-6">
+          <blockquote
+            style={{
+              fontFamily: "var(--font-fredoka)",
+              fontSize: "1.1rem",
+              color: "#030505",
+              lineHeight: 1.5,
+              marginBottom: "1.25rem",
+            }}
+          >
             &ldquo;{quote}&rdquo;
           </blockquote>
         )}
 
         {reason && (
-          <div className="mb-6">
-            <p className="text-[10px] tracking-[0.15em] uppercase text-neutral/40 font-body mb-2">
-              추천하는 이유
+          <div style={{ marginBottom: "1.25rem" }}>
+            <span
+              style={{
+                display: "inline-block",
+                backgroundColor: "#a0e4f2",
+                border: "1.5px solid #030505",
+                borderRadius: "9999px",
+                padding: "2px 10px",
+                fontSize: "0.625rem",
+                fontWeight: 700,
+                marginBottom: "0.5rem",
+              }}
+            >
+              추천 이유
+            </span>
+            <p style={{ fontSize: "0.875rem", color: "#555555", lineHeight: 1.6 }}>
+              {reason}
             </p>
-            <p className="text-sm font-body text-neutral/65 leading-relaxed">{reason}</p>
           </div>
         )}
 
-        <p className="text-[10px] text-neutral/35 font-body">From. {userNickname}</p>
+        <p style={{ fontSize: "0.6875rem", color: "#aaaaaa" }}>From. {userNickname}</p>
       </div>
     </Popup>
   );
