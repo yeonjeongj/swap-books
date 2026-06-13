@@ -43,6 +43,7 @@ type Props = {
   request: IncomingRequest;
   onClose: () => void;
   onDone?: (requestId: string) => void;
+  isPublic?: boolean;
 };
 
 function SearchIcon() {
@@ -70,7 +71,7 @@ const dropdownStyle = {
   backgroundColor: "#ffffff",
 };
 
-export default function SwapAcceptPopup({ request, onClose, onDone }: Props) {
+export default function SwapAcceptPopup({ request, onClose, onDone, isPublic }: Props) {
   const [userBooks, setUserBooks] = useState<UserBook[]>([]);
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
 
@@ -247,7 +248,11 @@ export default function SwapAcceptPopup({ request, onClose, onDone }: Props) {
         <div className="mb-5">
           <p style={labelStyle} className="mb-2">
             교환할 내 책{" "}
-            <span style={{ fontSize: "0.625rem", fontWeight: 400, color: "#aaaaaa" }}>Optional</span>
+            {isPublic ? (
+              <span style={{ fontSize: "0.625rem", fontWeight: 700, color: "#ef4444" }}>*필수</span>
+            ) : (
+              <span style={{ fontSize: "0.625rem", fontWeight: 400, color: "#aaaaaa" }}>Optional</span>
+            )}
           </p>
 
           {userBooks.length > 0 && (
@@ -379,26 +384,28 @@ export default function SwapAcceptPopup({ request, onClose, onDone }: Props) {
         {error && <p style={{ fontSize: "0.6875rem", color: "#ef4444", marginBottom: "12px" }}>{error}</p>}
 
         <div className="flex gap-2 mt-1">
-          <button
-            onClick={() => handleDecision("rejected")}
-            disabled={submitting}
-            className="flex-1 transition-colors hover:bg-[#f5f5f5] disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              border: "2px solid #030505",
-              borderRadius: "9999px",
-              padding: "10px 0",
-              fontWeight: 700,
-              fontSize: "0.875rem",
-              color: "#030505",
-              backgroundColor: "#ffffff",
-            }}
-          >
-            거절
-          </button>
+          {!isPublic && (
+            <button
+              onClick={() => handleDecision("rejected")}
+              disabled={submitting}
+              className="flex-1 transition-colors hover:bg-[#f5f5f5] disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                border: "2px solid #030505",
+                borderRadius: "9999px",
+                padding: "10px 0",
+                fontWeight: 700,
+                fontSize: "0.875rem",
+                color: "#030505",
+                backgroundColor: "#ffffff",
+              }}
+            >
+              거절
+            </button>
+          )}
           <button
             onClick={() => handleDecision("accepted")}
             disabled={submitting}
-            className="flex-1 transition-colors hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`${isPublic ? "w-full" : "flex-1"} transition-colors hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed`}
             style={{
               backgroundColor: "#f4d23d",
               border: "2px solid #030505",
@@ -410,7 +417,7 @@ export default function SwapAcceptPopup({ request, onClose, onDone }: Props) {
               color: "#030505",
             }}
           >
-            {submitting ? "처리 중..." : "수락"}
+            {submitting ? "처리 중..." : "수락하기"}
           </button>
         </div>
       </div>

@@ -1,29 +1,21 @@
 import Link from "next/link";
-import Image from "next/image";
 import { supabase } from "@/lib/supabase";
-
-type PublicSwapRequest = {
-  id: string;
-  created_at: string;
-  requester_message: string | null;
-  offered_book: { title: string; author: string; cover_image: string | null } | null;
-  requester: { nickname: string | null } | null;
-};
+import SwapListClient, { type PublicSwapItem } from "./SwapListClient";
 
 export default async function SwapListPage() {
   const { data } = await supabase
     .from("swap_requests")
     .select(
-      `id, created_at, requester_message,
-      offered_book:user_books!offered_book_id(title, author, cover_image),
-      requester:users!requester_id(nickname)`
+      `id, created_at, requester_id, requester_message,
+      offered_book:user_books!offered_book_id(id, title, author, cover_image),
+      requester:users!requester_id(id, nickname, avatar_url)`
     )
     .eq("is_public", true)
     .eq("status", "pending")
     .is("receiver_id", null)
     .order("created_at", { ascending: false });
 
-  const requests = (data ?? []) as unknown as PublicSwapRequest[];
+  const requests = (data ?? []) as unknown as PublicSwapItem[];
 
   return (
     <div className="max-w-3xl mx-auto px-5 py-12">
@@ -92,97 +84,7 @@ export default async function SwapListPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 gap-4">
-          {requests.map((req) => (
-            <Link key={req.id} href={`/swap/${req.id}`} style={{ textDecoration: "none" }}>
-              <div
-                style={{
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #E0E0E0",
-                  borderRadius: "12px",
-                  boxShadow: "0px 2px 8px rgba(3,5,5,0.08)",
-                  padding: "1rem",
-                  transition: "transform 120ms, box-shadow 120ms",
-                }}
-                className="hover:shadow-[0px_4px_12px_rgba(3,5,5,0.12)]"
-              >
-                <div className="flex gap-3 items-start">
-                  {req.offered_book?.cover_image ? (
-                    <Image
-                      src={req.offered_book.cover_image}
-                      alt={req.offered_book.title}
-                      width={52}
-                      height={74}
-                      className="object-cover flex-none"
-                      style={{ border: "1px solid #E0E0E0", borderRadius: "4px" }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: 52,
-                        height: 74,
-                        backgroundColor: "#a0e4f2",
-                        border: "1px solid #E0E0E0",
-                        borderRadius: "4px",
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p
-                      style={{
-                        fontSize: "0.875rem",
-                        fontWeight: 700,
-                        color: "#030505",
-                        lineHeight: 1.35,
-                        overflow: "hidden",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                      }}
-                    >
-                      {req.offered_book?.title ?? "—"}
-                    </p>
-                    <p style={{ fontSize: "0.75rem", color: "#888888", marginTop: "3px" }}>
-                      {req.offered_book?.author}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-3">
-                      <span
-                        style={{
-                          fontSize: "0.6875rem",
-                          fontWeight: 700,
-                          backgroundColor: "#f4d23d",
-                          border: "1px solid #030505",
-                          borderRadius: "9999px",
-                          padding: "2px 8px",
-                        }}
-                      >
-                        {req.requester?.nickname ?? "독자"}
-                      </span>
-                      <span style={{ fontSize: "0.6875rem", color: "#888888" }}>이 교환을 원해요</span>
-                    </div>
-                    {req.requester_message && (
-                      <p
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "#555555",
-                          marginTop: "8px",
-                          lineHeight: 1.5,
-                          overflow: "hidden",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                        }}
-                      >
-                        &ldquo;{req.requester_message}&rdquo;
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <SwapListClient requests={requests} />
       )}
     </div>
   );

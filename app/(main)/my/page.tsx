@@ -38,8 +38,7 @@ function SwapCard({ swap, userId }: { swap: SwapWithRelations; userId: string })
   const partnerName = partner?.nickname ?? (swap.is_public ? "공개 모집 중" : "알 수 없음");
   const book = swap.offered_book;
   const wantedBook = swap.wanted_book;
-  const d = new Date(swap.created_at);
-  const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  const dateStr = swap.created_at.slice(0, 10).replace(/-/g, ".");
   const isClickable = swap.status === "accepted" || swap.status === "completed";
 
   const cardStyle: React.CSSProperties = {
@@ -175,6 +174,8 @@ export default async function MyPage() {
       supabase.from("swap_requests").select(`id, status, is_public, created_at, requester_id, receiver_id, offered_book:user_books!offered_book_id(id, title, author, cover_image), wanted_book:user_books!wanted_book_id(id, title, author, cover_image), requester:users!requester_id(id, nickname), receiver:users!receiver_id(id, nickname)`).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`).in("status", ["pending", "accepted", "completed"]).order("created_at", { ascending: false }),
       supabase.from("calendar_events").select("id, title, date, time").eq("user_id", session.user.id).gte("date", monthFrom).lte("date", monthTo).order("date").order("created_at"),
     ]);
+    if (booksResult.error) console.error("[my/page] user_books query error:", booksResult.error);
+    if (swapsDataResult.error) console.error("[my/page] swap_requests query error:", swapsDataResult.error);
     userBooks = booksResult.data ?? [];
     swapCount = swapsResult.count ?? 0;
     mySwaps = (swapsDataResult.data ?? []) as unknown as SwapWithRelations[];
