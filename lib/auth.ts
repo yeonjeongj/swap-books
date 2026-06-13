@@ -41,6 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .select("nickname, avatar_url")
           .eq("id", token.sub!)
           .maybeSingle();
+
         token.nickname = data?.nickname ?? user.name ?? "";
         token.avatarUrl = data?.avatar_url ?? user.image ?? "";
         token.hasCompletedOnboarding = !!data?.nickname;
