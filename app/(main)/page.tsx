@@ -4,6 +4,8 @@ import { supabase } from "@/lib/supabase";
 import HeroButtons from "./HeroButtons";
 import MainPublicRequestsClient, { type MainPublicRequest } from "./MainPublicRequestsClient";
 
+export const dynamic = "force-dynamic";
+
 type RecentBook = {
   id: string;
   title: string;
