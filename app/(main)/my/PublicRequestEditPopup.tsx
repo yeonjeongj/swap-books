@@ -61,11 +61,14 @@ export default function PublicRequestEditPopup({
         }),
       });
       if (!res.ok) {
-        const json = await res.json();
-        setError(json.error ?? "저장에 실패했습니다.");
+        let errMsg = "저장에 실패했습니다.";
+        try { const json = await res.json(); errMsg = json.error ?? errMsg; } catch {}
+        setError(errMsg);
         return;
       }
       onSaved();
+    } catch {
+      setError("네트워크 오류가 발생했습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -77,15 +80,20 @@ export default function PublicRequestEditPopup({
       return;
     }
     setDeleting(true);
+    setError(null);
     try {
       const res = await fetch(`/api/swaps/${swapId}`, { method: "DELETE" });
       if (!res.ok) {
-        const json = await res.json();
-        setError(json.error ?? "삭제에 실패했습니다.");
+        let errMsg = "삭제에 실패했습니다.";
+        try { const json = await res.json(); errMsg = json.error ?? errMsg; } catch {}
+        setError(errMsg);
         setConfirmDelete(false);
         return;
       }
       onDeleted();
+    } catch {
+      setError("네트워크 오류가 발생했습니다.");
+      setConfirmDelete(false);
     } finally {
       setDeleting(false);
     }

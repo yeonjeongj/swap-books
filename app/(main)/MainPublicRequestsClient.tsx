@@ -28,7 +28,8 @@ function BookCoverSm({ src, title }: { src: string | null; title: string }) {
       />
     );
   }
-  const hue = (title.charCodeAt(0) * 37) % 360;
+  const safeTitle = title.trim() || "?";
+  const hue = (safeTitle.charCodeAt(0) * 37) % 360;
   return (
     <div
       style={{
@@ -44,7 +45,7 @@ function BookCoverSm({ src, title }: { src: string | null; title: string }) {
       }}
     >
       <span style={{ fontSize: "0.625rem", color: "#ffffff", textAlign: "center", padding: "4px" }}>
-        {title.slice(0, 2)}
+        {safeTitle.slice(0, 2)}
       </span>
     </div>
   );
