@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import HeroButtons from "./HeroButtons";
+import MainPublicRequestsClient, { type MainPublicRequest } from "./MainPublicRequestsClient";
 
 type RecentBook = {
   id: string;
@@ -10,17 +11,6 @@ type RecentBook = {
   cover_image: string | null;
 };
 
-type PublicSwapRequest = {
-  id: string;
-  created_at: string;
-  requester_message: string | null;
-  offered_book: {
-    title: string;
-    author: string;
-    cover_image: string | null;
-  } | null;
-  requester: { nickname: string | null } | null;
-};
 
 type PublicActiveSwap = {
   id: string;
@@ -47,9 +37,9 @@ export default async function HomePage() {
     supabase
       .from("swap_requests")
       .select(
-        `id, created_at, requester_message,
-        offered_book:user_books!offered_book_id(title, author, cover_image),
-        requester:users!requester_id(nickname)`,
+        `id, created_at, requester_id, requester_message,
+        offered_book:user_books!offered_book_id(id, title, author, cover_image),
+        requester:users!requester_id(id, nickname, avatar_url)`,
       )
       .eq("is_public", true)
       .eq("status", "pending")
@@ -73,7 +63,7 @@ export default async function HomePage() {
 
   const recentBooks = (booksResult.data ?? []) as RecentBook[];
   const publicRequests = (requestsResult.data ??
-    []) as unknown as PublicSwapRequest[];
+    []) as unknown as MainPublicRequest[];
   const activeSwaps = (activeSwapsResult.data ??
     []) as unknown as PublicActiveSwap[];
 
@@ -242,9 +232,21 @@ function HeroCombinedSection() {
 
       {/* Mobile: steps as horizontal pills */}
       <div
-        className="lg:hidden max-w-3xl mx-auto px-5 flex gap-2 flex-wrap"
+        className="lg:hidden max-w-3xl mx-auto px-5"
         style={{ paddingBottom: "2rem" }}
       >
+        <p
+          style={{
+            fontFamily: "var(--font-fredoka)",
+            fontSize: "0.8125rem",
+            fontWeight: 700,
+            color: "#888888",
+            marginBottom: "0.5rem",
+          }}
+        >
+          How it works
+        </p>
+        <div className="flex gap-2 flex-wrap">
         {STEPS.map((step) => (
           <div
             key={step.num}
@@ -275,6 +277,7 @@ function HeroCombinedSection() {
             </span>
           </div>
         ))}
+        </div>
       </div>
     </section>
   );
@@ -456,7 +459,7 @@ function RecentBooksSection({ books }: { books: RecentBook[] }) {
 function PublicRequestsSection({
   requests,
 }: {
-  requests: PublicSwapRequest[];
+  requests: MainPublicRequest[];
 }) {
   return (
     <section style={{ backgroundColor: "#ffffff" }}>
@@ -467,7 +470,7 @@ function PublicRequestsSection({
         <SectionHeader
           badge="스왑 모집 중"
           title="교환 파트너 찾는 중"
-          moreHref="/swap"
+          moreHref={requests.length > 0 ? "/swap" : undefined}
           moreLabel="전체 보기"
         />
 
@@ -483,95 +486,7 @@ function PublicRequestsSection({
             현재 모집 중인 교환이 없어요
           </p>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-4">
-            {requests.map((req) => (
-              <Link
-                key={req.id}
-                href={`/swap/${req.id}`}
-                style={{ textDecoration: "none" }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #E0E0E0",
-                    borderRadius: "12px",
-                    boxShadow: "0px 2px 8px rgba(3,5,5,0.08)",
-                    padding: "1rem",
-                    transition: "box-shadow 120ms",
-                  }}
-                  className="hover:shadow-[0px_4px_12px_rgba(3,5,5,0.12)]"
-                >
-                  <div className="flex gap-3 items-start">
-                    <BookCover
-                      src={req.offered_book?.cover_image ?? null}
-                      title={req.offered_book?.title ?? "?"}
-                      size="sm"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p
-                        style={{
-                          fontSize: "0.8125rem",
-                          fontWeight: 700,
-                          color: "#030505",
-                          lineHeight: 1.35,
-                          overflow: "hidden",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                        }}
-                      >
-                        {req.offered_book?.title ?? "—"}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: "0.6875rem",
-                          color: "#888888",
-                          marginTop: "3px",
-                        }}
-                      >
-                        {req.offered_book?.author}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-2.5">
-                        <span
-                          style={{
-                            fontSize: "0.625rem",
-                            fontWeight: 700,
-                            backgroundColor: "#f4d23d",
-                            border: "1px solid #030505",
-                            borderRadius: "9999px",
-                            padding: "2px 7px",
-                          }}
-                        >
-                          {req.requester?.nickname ?? "독자"}
-                        </span>
-                        <span
-                          style={{ fontSize: "0.625rem", color: "#888888" }}
-                        >
-                          이 교환을 원해요
-                        </span>
-                      </div>
-                      {req.requester_message && (
-                        <p
-                          style={{
-                            fontSize: "0.6875rem",
-                            color: "#555555",
-                            marginTop: "6px",
-                            lineHeight: 1.5,
-                            overflow: "hidden",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                          }}
-                        >
-                          &ldquo;{req.requester_message}&rdquo;
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <MainPublicRequestsClient requests={requests} />
         )}
       </div>
     </section>
@@ -588,7 +503,7 @@ function ActiveSwapsSection({ swaps }: { swaps: PublicActiveSwap[] }) {
         <SectionHeader
           badge="진행 중인 스왑"
           title="지금 교환 중인 책들"
-          moreHref="/current"
+          moreHref={swaps.length > 0 ? "/current" : undefined}
           moreLabel="전체 보기"
         />
 

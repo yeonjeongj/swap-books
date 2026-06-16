@@ -55,9 +55,9 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { status } = body;
-  if (!status) {
-    return NextResponse.json({ error: "status is required" }, { status: 400 });
+  const isFieldUpdate = !body.status && ("offeredBookId" in body || "requesterMessage" in body);
+  if (!body.status && !isFieldUpdate) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
   const { data: existing, error: fetchError } = await supabase
@@ -74,6 +74,44 @@ export async function PATCH(
   const isReceiver = existing.receiver_id === session.user.id;
   const isPublicPending =
     existing.is_public && !existing.receiver_id && existing.status === "pending";
+
+  // Field update (edit own pending public request)
+  if (isFieldUpdate) {
+    if (!isRequester) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (!existing.is_public || existing.status !== "pending") {
+      return NextResponse.json(
+        { error: "Only pending public requests can be edited" },
+        { status: 422 }
+      );
+    }
+    const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if ("requesterMessage" in body) {
+      updatePayload.requester_message = body.requesterMessage ?? null;
+    }
+    if (body.offeredBookId) {
+      const { data: book } = await supabase
+        .from("user_books")
+        .select("user_id")
+        .eq("id", body.offeredBookId)
+        .single();
+      if (!book || book.user_id !== session.user.id) {
+        return NextResponse.json({ error: "You do not own that book" }, { status: 403 });
+      }
+      updatePayload.offered_book_id = body.offeredBookId;
+    }
+    const { data, error } = await supabase
+      .from("swap_requests")
+      .update(updatePayload)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json(data);
+  }
 
   if (!isRequester && !isReceiver && !isPublicPending) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -150,4 +188,44 @@ export async function PATCH(
   }
 
   return NextResponse.json(data);
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  ctx: RouteContext<"/api/swaps/[id]">
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await ctx.params;
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("swap_requests")
+    .select("requester_id, is_public, status")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (existing.requester_id !== session.user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (!existing.is_public || existing.status !== "pending") {
+    return NextResponse.json(
+      { error: "Only pending public requests can be deleted" },
+      { status: 422 }
+    );
+  }
+
+  const { error } = await supabase.from("swap_requests").delete().eq("id", id);
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return new NextResponse(null, { status: 204 });
 }
