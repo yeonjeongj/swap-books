@@ -33,9 +33,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger, session, account }) {
       if (user) {
-        // On sign-in, check DB for existing profile to avoid resetting a saved nickname
+        if (account?.provider === "kakao" && account.providerAccountId) {
+          token.sub = account.providerAccountId.toString();
+        }
         const { data } = await supabase
           .from("users")
           .select("nickname, avatar_url")
