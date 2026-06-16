@@ -644,7 +644,7 @@ export default function SwapDetail({ swapId, currentUserId }: Props) {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-5 py-20 text-center">
+      <div className="w-full max-w-3xl mx-auto px-5 py-20 text-center">
         <p style={{ color: "#888888", fontSize: "0.875rem" }}>불러오는 중...</p>
       </div>
     );
@@ -652,7 +652,7 @@ export default function SwapDetail({ swapId, currentUserId }: Props) {
 
   if (error || !swap) {
     return (
-      <div className="max-w-3xl mx-auto px-5 py-20 text-center">
+      <div className="w-full max-w-3xl mx-auto px-5 py-20 text-center">
         <p style={{ color: "#888888", fontSize: "0.875rem" }}>{error ?? "교환을 찾을 수 없습니다."}</p>
       </div>
     );

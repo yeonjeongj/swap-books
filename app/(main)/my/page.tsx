@@ -8,6 +8,7 @@ import SwapRequestButton from "./SwapRequestButton";
 import ProfileEditButton from "./ProfileEditButton";
 import DeleteBookButton from "./DeleteBookButton";
 import CalendarClient, { type CalendarEvent } from "./CalendarClient";
+import MyPublicRequestActions from "./MyPublicRequestActions";
 
 type UserBook = {
   id: string;
@@ -26,6 +27,7 @@ type SwapWithRelations = {
   created_at: string;
   requester_id: string;
   receiver_id: string | null;
+  requester_message: string | null;
   offered_book: { id: string; title: string; author: string; cover_image: string | null } | null;
   wanted_book: { id: string; title: string; author: string; cover_image: string | null } | null;
   requester: { id: string; nickname: string | null } | null;
@@ -127,7 +129,7 @@ function SwapCard({ swap, userId }: { swap: SwapWithRelations; userId: string })
   return inner;
 }
 
-function SwapSection({ title, swaps, userId }: { title: string; swaps: SwapWithRelations[]; userId: string }) {
+function SwapSection({ title, swaps, userId, userBooks }: { title: string; swaps: SwapWithRelations[]; userId: string; userBooks?: UserBook[] }) {
   return (
     <div className="mb-8">
       {title && (
@@ -143,9 +145,12 @@ function SwapSection({ title, swaps, userId }: { title: string; swaps: SwapWithR
         </p>
       )}
       <div className="flex flex-col gap-2">
-        {swaps.map((swap) => (
-          <SwapCard key={swap.id} swap={swap} userId={userId} />
-        ))}
+        {swaps.map((swap) => {
+          if (swap.is_public && swap.status === "pending" && swap.requester_id === userId && userBooks) {
+            return <MyPublicRequestActions key={swap.id} swap={swap} userBooks={userBooks} />;
+          }
+          return <SwapCard key={swap.id} swap={swap} userId={userId} />;
+        })}
       </div>
     </div>
   );
@@ -171,7 +176,7 @@ export default async function MyPage() {
     const [booksResult, swapsResult, swapsDataResult, eventsResult] = await Promise.all([
       supabase.from("user_books").select("id, isbn, title, author, publisher, cover_image, created_at").eq("user_id", session.user.id).order("created_at", { ascending: false }),
       supabase.from("swap_requests").select("id", { count: "exact", head: true }).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`),
-      supabase.from("swap_requests").select(`id, status, is_public, created_at, requester_id, receiver_id, offered_book:user_books!offered_book_id(id, title, author, cover_image), wanted_book:user_books!wanted_book_id(id, title, author, cover_image), requester:users!requester_id(id, nickname), receiver:users!receiver_id(id, nickname)`).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`).in("status", ["pending", "accepted", "completed"]).order("created_at", { ascending: false }),
+      supabase.from("swap_requests").select(`id, status, is_public, created_at, requester_id, receiver_id, requester_message, offered_book:user_books!offered_book_id(id, title, author, cover_image), wanted_book:user_books!wanted_book_id(id, title, author, cover_image), requester:users!requester_id(id, nickname), receiver:users!receiver_id(id, nickname)`).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`).in("status", ["pending", "accepted", "completed"]).order("created_at", { ascending: false }),
       supabase.from("calendar_events").select("id, title, date, time").eq("user_id", session.user.id).gte("date", monthFrom).lte("date", monthTo).order("date").order("created_at"),
     ]);
     if (booksResult.error) console.error("[my/page] user_books query error:", booksResult.error);
@@ -190,7 +195,7 @@ export default async function MyPage() {
   const completedSwaps = mySwaps.filter((s) => s.status === "completed");
 
   return (
-    <div className="max-w-3xl mx-auto px-5 py-10">
+    <div className="w-full max-w-3xl mx-auto px-5 py-12">
       {/* Profile section */}
       <div
         className="p-6 mb-8"
@@ -341,7 +346,7 @@ export default async function MyPage() {
             </span>
           </div>
           {pendingSwaps.length > 0 && (
-            <SwapSection title="진행 중인 요청" swaps={pendingSwaps} userId={userId} />
+            <SwapSection title="진행 중인 요청" swaps={pendingSwaps} userId={userId} userBooks={userBooks} />
           )}
           {acceptedSwaps.length > 0 && (
             <SwapSection title="수락된 교환" swaps={acceptedSwaps} userId={userId} />

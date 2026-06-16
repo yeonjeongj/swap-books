@@ -18,7 +18,7 @@ export default async function SwapListPage() {
   const requests = (data ?? []) as unknown as PublicSwapItem[];
 
   return (
-    <div className="max-w-3xl mx-auto px-5 py-12">
+    <div className="w-full max-w-3xl mx-auto px-5 py-12">
       <div className="mb-8">
         <span
           style={{

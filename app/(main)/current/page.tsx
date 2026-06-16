@@ -36,7 +36,7 @@ export default async function CurrentSwap() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-5 py-12">
+    <div className="w-full max-w-3xl mx-auto px-5 py-12">
       {/* Header */}
       <div className="mb-10">
         <span
