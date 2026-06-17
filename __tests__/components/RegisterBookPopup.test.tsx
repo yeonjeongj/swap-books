@@ -75,12 +75,10 @@ describe('RegisterBookPopup', () => {
     expect(input.value).toBe('해리포터')
   })
 
-  it('shows error message when submitting without selecting a book', async () => {
-    const user = userEvent.setup()
+  it('submit button is disabled when no book is selected', () => {
     render(<RegisterBookPopup {...defaultProps} />)
-    // Submit button is disabled when no book selected — click form submit directly
-    const form = screen.getByRole('button', { name: '등록하기' })
-    expect(form).toBeDisabled()
+    const submitBtn = screen.getByRole('button', { name: '등록하기' })
+    expect(submitBtn).toBeDisabled()
   })
 
   it('calls onSuccess and onClose after successful registration', async () => {

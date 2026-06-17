@@ -15,9 +15,9 @@ test.describe('Swap request flow', () => {
 
     // Requires at least one book in the user's library
     const swapBtn = page.getByRole('button', { name: /교환|교환 신청/i }).first()
-    const hasSomeBook = await swapBtn.isVisible().catch(() => false)
-
-    if (!hasSomeBook) {
+    try {
+      await swapBtn.waitFor({ state: 'visible', timeout: 5000 })
+    } catch {
       test.skip()
       return
     }
@@ -32,8 +32,9 @@ test.describe('Swap request flow', () => {
     await page.waitForLoadState('networkidle')
 
     const swapBtn = page.getByRole('button', { name: /교환|교환 신청/i }).first()
-    const hasSomeBook = await swapBtn.isVisible().catch(() => false)
-    if (!hasSomeBook) {
+    try {
+      await swapBtn.waitFor({ state: 'visible', timeout: 5000 })
+    } catch {
       test.skip()
       return
     }

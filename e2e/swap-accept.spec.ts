@@ -20,8 +20,9 @@ test.describe('Swap accept flow', () => {
 
     // Find a swap card link and navigate to detail
     const swapLink = page.getByRole('link').filter({ hasText: /교환|Swap/i }).first()
-    const hasLink = await swapLink.isVisible().catch(() => false)
-    if (!hasLink) {
+    try {
+      await swapLink.waitFor({ state: 'visible', timeout: 5000 })
+    } catch {
       // No public swaps exist — skip
       test.skip()
       return
