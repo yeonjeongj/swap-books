@@ -118,15 +118,15 @@ export async function PATCH(
   }
 
   const allowed = ALLOWED_TRANSITIONS[existing.status] ?? [];
-  if (!allowed.includes(status)) {
+  if (!allowed.includes(body.status)) {
     return NextResponse.json(
-      { error: `Cannot transition from '${existing.status}' to '${status}'` },
+      { error: `Cannot transition from '${existing.status}' to '${body.status}'` },
       { status: 422 }
     );
   }
 
   if (
-    (status === "accepted" || status === "rejected") &&
+    (body.status === "accepted" || body.status === "rejected") &&
     !isReceiver &&
     !isPublicPending
   ) {
@@ -136,7 +136,7 @@ export async function PATCH(
     );
   }
 
-  if (status === "accepted" && isRequester && !isPublicPending) {
+  if (body.status === "accepted" && isRequester && !isPublicPending) {
     return NextResponse.json(
       { error: "You cannot accept your own swap request" },
       { status: 400 }
@@ -144,11 +144,11 @@ export async function PATCH(
   }
 
   const updatePayload: Record<string, unknown> = {
-    status,
+    status: body.status,
     updated_at: new Date().toISOString(),
   };
 
-  if (status === "accepted") {
+  if (body.status === "accepted") {
     if (isPublicPending) {
       updatePayload.receiver_id = session.user.id;
     }
