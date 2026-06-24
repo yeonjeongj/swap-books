@@ -3,12 +3,14 @@ import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { highResCover } from "@/lib/utils/cover";
+import { getBooksForMonth, getUserJoinYearMonth } from "@/lib/bookshelf";
 import RegisterBookButton from "./RegisterBookButton";
 import SwapRequestButton from "./SwapRequestButton";
 import ProfileEditButton from "./ProfileEditButton";
 import DeleteBookButton from "./DeleteBookButton";
 import CalendarClient, { type CalendarEvent } from "./CalendarClient";
 import MyPublicRequestActions from "./MyPublicRequestActions";
+import MonthlyBookshelfClient from "./MonthlyBookshelfClient";
 
 type UserBook = {
   id: string;
@@ -163,6 +165,9 @@ export default async function MyPage() {
   let swapCount = 0;
   let mySwaps: SwapWithRelations[] = [];
   let calendarEvents: CalendarEvent[] = [];
+  let bookshelfBooks: { id: string; title: string; author: string; status: "registered" | "noted" | "swapping" | "swapped" }[] = [];
+  let joinYear: number;
+  let joinMonth: number;
 
   const now = new Date();
   const calYear = now.getFullYear();
@@ -173,11 +178,13 @@ export default async function MyPage() {
     const lastDay = new Date(calYear, calMonth + 1, 0).getDate();
     const monthTo = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-    const [booksResult, swapsResult, swapsDataResult, eventsResult] = await Promise.all([
+    const [booksResult, swapsResult, swapsDataResult, eventsResult, shelfBooks, joinDate] = await Promise.all([
       supabase.from("user_books").select("id, isbn, title, author, publisher, cover_image, created_at").eq("user_id", session.user.id).order("created_at", { ascending: false }),
       supabase.from("swap_requests").select("id", { count: "exact", head: true }).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`),
       supabase.from("swap_requests").select(`id, status, is_public, created_at, requester_id, receiver_id, requester_message, offered_book:user_books!offered_book_id(id, title, author, cover_image), wanted_book:user_books!wanted_book_id(id, title, author, cover_image), requester:users!requester_id(id, nickname), receiver:users!receiver_id(id, nickname)`).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`).in("status", ["pending", "accepted", "completed"]).order("created_at", { ascending: false }),
       supabase.from("calendar_events").select("id, title, date, time").eq("user_id", session.user.id).gte("date", monthFrom).lte("date", monthTo).order("date").order("created_at"),
+      getBooksForMonth(session.user.id, calYear, calMonth + 1),
+      getUserJoinYearMonth(session.user.id),
     ]);
     if (booksResult.error) console.error("[my/page] user_books query error:", booksResult.error);
     if (swapsDataResult.error) console.error("[my/page] swap_requests query error:", swapsDataResult.error);
@@ -185,6 +192,12 @@ export default async function MyPage() {
     swapCount = swapsResult.count ?? 0;
     mySwaps = (swapsDataResult.data ?? []) as unknown as SwapWithRelations[];
     calendarEvents = (eventsResult.data ?? []) as CalendarEvent[];
+    bookshelfBooks = shelfBooks;
+    joinYear = joinDate.joinYear;
+    joinMonth = joinDate.joinMonth;
+  } else {
+    joinYear = now.getFullYear();
+    joinMonth = now.getMonth() + 1;
   }
 
   const displayName = (session?.user as { nickname?: string })?.nickname ?? session?.user?.name ?? "독서가";
@@ -273,6 +286,15 @@ export default async function MyPage() {
         </div>
       </div>
 
+      {/* Monthly bookshelf */}
+      <MonthlyBookshelfClient
+        initialBooks={bookshelfBooks}
+        initialYear={calYear}
+        initialMonth={calMonth + 1}
+        joinYear={joinYear}
+        joinMonth={joinMonth}
+      />
+
       {/* My books section */}
       {userBooks.length > 0 && (
         <>
@@ -306,21 +328,23 @@ export default async function MyPage() {
                 <div className="flex justify-end mb-2">
                   <DeleteBookButton bookId={book.id} />
                 </div>
-                {book.cover_image ? (
-                  <div
-                    className="relative w-full aspect-[3/4] mb-3 overflow-hidden"
-                    style={{ borderRadius: "6px", border: "1px solid #E0E0E0" }}
-                  >
-                    <Image src={highResCover(book.cover_image)!} alt={book.title} fill className="object-cover object-top" quality={90} />
-                  </div>
-                ) : (
-                  <div
-                    className="w-full aspect-[3/4] mb-3"
-                    style={{ backgroundColor: "#a0e4f2", borderRadius: "6px", border: "1px solid #E0E0E0" }}
-                  />
-                )}
-                <p className="text-sm leading-snug line-clamp-2" style={{ color: "#030505", fontWeight: 600 }}>{book.title}</p>
-                <p style={{ fontSize: "0.6875rem", color: "#888888", marginTop: "2px" }}>{book.author}</p>
+                <Link href={`/my/books/${book.id}`} style={{ display: "block", textDecoration: "none" }}>
+                  {book.cover_image ? (
+                    <div
+                      className="relative w-full aspect-[3/4] mb-3 overflow-hidden"
+                      style={{ borderRadius: "6px", border: "1px solid #E0E0E0" }}
+                    >
+                      <Image src={highResCover(book.cover_image)!} alt={book.title} fill className="object-cover object-top" quality={90} />
+                    </div>
+                  ) : (
+                    <div
+                      className="w-full aspect-[3/4] mb-3"
+                      style={{ backgroundColor: "#a0e4f2", borderRadius: "6px", border: "1px solid #E0E0E0" }}
+                    />
+                  )}
+                  <p className="text-sm leading-snug line-clamp-2" style={{ color: "#030505", fontWeight: 600 }}>{book.title}</p>
+                  <p style={{ fontSize: "0.6875rem", color: "#888888", marginTop: "2px" }}>{book.author}</p>
+                </Link>
               </div>
             ))}
           </div>

@@ -4,20 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { highResCover } from "@/lib/utils/cover";
 
-type BookDetail = {
+type BookData = {
   id: string;
   title: string;
   author: string;
   cover_image: string | null;
-};
-
-type SwapData = {
-  id: string;
-  status: string;
-  requester_id: string;
-  receiver_id: string | null;
-  offered_book: BookDetail;
-  wanted_book: BookDetail | null;
 };
 
 type NoteComment = {
@@ -40,9 +31,7 @@ type ReadingNote = {
   reading_note_comments: NoteComment[];
 };
 
-type Props = { swapId: string; currentUserId: string | null };
-
-const COVER_COLORS = ["#a0e4f2", "#f7a8c7", "#f4d23d", "#b8e6b0"];
+type Props = { book: BookData; currentUserId: string };
 
 function getInitials(name: string) {
   return name ? name.charAt(0).toUpperCase() : "?";
@@ -90,7 +79,7 @@ function TrashIcon() {
   );
 }
 
-function BookCover({ coverImage, title, color }: { coverImage: string | null; title: string; color: string }) {
+function BookCover({ coverImage, title }: { coverImage: string | null; title: string }) {
   const src = highResCover(coverImage);
   if (src) {
     return (
@@ -104,8 +93,8 @@ function BookCover({ coverImage, title, color }: { coverImage: string | null; ti
   }
   return (
     <div
-      className="w-full aspect-[3/4] flex flex-col items-center justify-center gap-2"
-      style={{ backgroundColor: color, borderRadius: "8px", border: "1px solid #E0E0E0" }}
+      className="w-full aspect-[3/4] flex flex-col items-center justify-center"
+      style={{ backgroundColor: "#a0e4f2", borderRadius: "8px", border: "1px solid #E0E0E0" }}
     >
       <span
         style={{
@@ -167,14 +156,12 @@ function InlineCommentForm({
   onSubmit,
   onCancel,
   submitting,
-  placeholder = "댓글을 입력하세요",
 }: {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
   onCancel: () => void;
   submitting: boolean;
-  placeholder?: string;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { ref.current?.focus(); }, []);
@@ -190,7 +177,7 @@ function InlineCommentForm({
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) onSubmit();
           if (e.key === "Escape") onCancel();
         }}
-        placeholder={placeholder}
+        placeholder="댓글을 입력하세요"
         className="w-full px-3 py-2 text-xs outline-none transition-colors focus:border-[#030505] bg-white resize-none"
         style={{ border: "1.5px solid #dddddd", borderRadius: "8px", color: "#030505" }}
       />
@@ -228,7 +215,7 @@ function NoteCard({
   onRefresh,
 }: {
   note: ReadingNote;
-  currentUserId: string | null;
+  currentUserId: string;
   onRefresh: () => void;
 }) {
   const comments = note.reading_note_comments;
@@ -388,7 +375,7 @@ function NoteCard({
   );
 }
 
-function AddNoteForm({ swapId, bookId, onAdded }: { swapId: string; bookId: string; onAdded: () => void }) {
+function AddNoteForm({ bookId, onAdded }: { bookId: string; onAdded: () => void }) {
   const [page, setPage] = useState("");
   const [quote, setQuote] = useState("");
   const [comment, setComment] = useState("");
@@ -442,7 +429,6 @@ function AddNoteForm({ swapId, bookId, onAdded }: { swapId: string; bookId: stri
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          swapId,
           bookId,
           page: pageNum,
           quote: quote.trim() || undefined,
@@ -592,231 +578,96 @@ function AddNoteForm({ swapId, bookId, onAdded }: { swapId: string; bookId: stri
   );
 }
 
-export default function SwapDetail({ swapId, currentUserId }: Props) {
-  const [swap, setSwap] = useState<SwapData | null>(null);
+export default function BookDetail({ book, currentUserId }: Props) {
   const [notes, setNotes] = useState<ReadingNote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [showAddNote, setShowAddNote] = useState(false);
-  const [finishing, setFinishing] = useState(false);
 
   const fetchNotes = useCallback(async () => {
-    const res = await fetch(`/api/reading-notes?swapId=${swapId}`);
+    const res = await fetch(`/api/reading-notes?userBookId=${book.id}`);
     if (res.ok) setNotes(await res.json());
-  }, [swapId]);
-
-  async function handleFinish() {
-    if (!confirm("교환독서를 완료 처리하시겠습니까?")) return;
-    setFinishing(true);
-    try {
-      const res = await fetch(`/api/swaps/${swapId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "completed" }),
-      });
-      if (res.ok) {
-        setSwap((prev) => prev ? { ...prev, status: "completed" } : null);
-      }
-    } finally {
-      setFinishing(false);
-    }
-  }
+  }, [book.id]);
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      const [swapRes, notesRes] = await Promise.all([
-        fetch(`/api/swaps/${swapId}`),
-        fetch(`/api/reading-notes?swapId=${swapId}`),
-      ]);
-      if (!swapRes.ok) {
-        setError("교환 정보를 불러올 수 없습니다.");
-        setLoading(false);
-        return;
-      }
-      setSwap(await swapRes.json());
-      if (notesRes.ok) setNotes(await notesRes.json());
-      setLoading(false);
-    }
-    load();
-  }, [swapId]);
-
-  if (loading) {
-    return (
-      <div className="w-full max-w-3xl mx-auto px-5 py-20 text-center">
-        <p style={{ color: "#888888", fontSize: "0.875rem" }}>불러오는 중...</p>
-      </div>
-    );
-  }
-
-  if (error || !swap) {
-    return (
-      <div className="w-full max-w-3xl mx-auto px-5 py-20 text-center">
-        <p style={{ color: "#888888", fontSize: "0.875rem" }}>{error ?? "교환을 찾을 수 없습니다."}</p>
-      </div>
-    );
-  }
-
-  const tabs = [swap.offered_book, ...(swap.wanted_book ? [swap.wanted_book] : [])];
-  const book = tabs[activeIndex];
-  const bookNotes = notes.filter((n) => n.book_id === book.id);
-  const coverColor = COVER_COLORS[activeIndex % COVER_COLORS.length];
-  const isAccepted = swap.status === "accepted";
-  const isCompleted = swap.status === "completed";
-  const isParticipant =
-    currentUserId !== null &&
-    (swap.requester_id === currentUserId || swap.receiver_id === currentUserId);
+    fetchNotes().finally(() => setLoading(false));
+  }, [fetchNotes]);
 
   return (
-    <div className="w-full">
-      {/* Tab navigation */}
-      <div style={{ borderBottom: "1px solid #E0E0E0", backgroundColor: "#ffffff" }}>
-        <div className="max-w-3xl mx-auto px-5 flex">
-          {tabs.map((b, i) => (
-            <button
-              key={b.id}
-              onClick={() => { setActiveIndex(i); setShowAddNote(false); }}
-              className="py-4 mr-6 text-xs font-bold transition-colors"
-              style={{
-                color: activeIndex === i ? "#030505" : "#aaaaaa",
-                borderBottom: activeIndex === i ? "3px solid #030505" : "3px solid transparent",
-                marginBottom: "-2px",
-                fontFamily: activeIndex === i ? "var(--font-fredoka)" : undefined,
-              }}
-            >
-              {b.title.length > 20 ? b.title.slice(0, 20) + "…" : b.title}
-            </button>
-          ))}
+    <div className="w-full max-w-3xl mx-auto px-5 py-10">
+      {/* Book header */}
+      <div className="flex items-center gap-5 mb-10">
+        <div className="w-20 flex-shrink-0">
+          <BookCover coverImage={book.cover_image} title={book.title} />
         </div>
-      </div>
-
-      <div className="max-w-3xl mx-auto px-5 py-10">
-        {/* Book cover + info: compact horizontal header */}
-        <div className="flex items-center gap-5 mb-10">
-          <div className="w-20 flex-shrink-0">
-            <BookCover coverImage={book.cover_image} title={book.title} color={coverColor} />
-          </div>
-          <div>
-            <h1
-              style={{
-                fontFamily: "var(--font-fredoka)",
-                fontSize: "1.5rem",
-                fontWeight: 700,
-                color: "#030505",
-                lineHeight: 1.2,
-              }}
-            >
-              {book.title}
-            </h1>
-            <p style={{ fontSize: "0.875rem", color: "#888888", marginTop: "4px" }}>{book.author}</p>
-          </div>
-        </div>
-
-        {/* Reading notes: full width */}
         <div>
-          <div className="flex items-center justify-between mb-6">
-            <span
-              style={{
-                display: "inline-block",
-                backgroundColor: "#a0e4f2",
-                border: "1.5px solid #030505",
-                borderRadius: "9999px",
-                padding: "3px 12px",
-                fontSize: "0.75rem",
-                fontWeight: 700,
-              }}
-            >
-              Reading Note
-            </span>
-            {isAccepted && (
-              <button
-                onClick={() => setShowAddNote((v) => !v)}
-                className="flex items-center gap-2 transition-colors hover:brightness-95"
-                style={{
-                  backgroundColor: showAddNote ? "#f5f5f5" : "#f4d23d",
-                  border: "1.5px solid #030505",
-                  borderRadius: "9999px",
-                  padding: "6px 14px",
-                  fontWeight: 700,
-                  fontSize: "0.75rem",
-                  color: "#030505",
-                }}
-              >
-                <PencilIcon />
-                {showAddNote ? "취소" : "등록하기"}
-              </button>
-            )}
-          </div>
-
-          {showAddNote && (
-            <AddNoteForm
-              swapId={swapId}
-              bookId={book.id}
-              onAdded={() => { fetchNotes(); setShowAddNote(false); }}
-            />
-          )}
-
-          {bookNotes.length === 0 ? (
-            <p style={{ fontSize: "0.8125rem", color: "#aaaaaa" }}>아직 등록된 노트가 없습니다.</p>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {bookNotes.map((note) => (
-                <NoteCard key={note.id} note={note} currentUserId={currentUserId} onRefresh={fetchNotes} />
-              ))}
-            </div>
-          )}
+          <h1
+            style={{
+              fontFamily: "var(--font-fredoka)",
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              color: "#030505",
+              lineHeight: 1.2,
+            }}
+          >
+            {book.title}
+          </h1>
+          <p style={{ fontSize: "0.875rem", color: "#888888", marginTop: "4px" }}>{book.author}</p>
         </div>
       </div>
 
-      {/* Bottom CTA — finish swap */}
-      {(isParticipant && isAccepted) || isCompleted ? (
-        <div
-          className="max-w-3xl mx-auto px-5 pb-14 flex flex-col items-center gap-3"
-          style={{ borderTop: "1px solid #e5e5e5", paddingTop: "2.5rem" }}
-        >
-          {isCompleted ? (
-            <>
-              <span
-                style={{
-                  backgroundColor: "#b8e6b0",
-                  border: "2px solid #030505",
-                  borderRadius: "9999px",
-                  padding: "8px 24px",
-                  fontSize: "0.875rem",
-                  fontWeight: 700,
-                  color: "#030505",
-                  boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
-                }}
-              >
-                ✓ 교환독서 완료
-              </span>
-              <p style={{ fontSize: "0.75rem", color: "#888888" }}>함께 읽어주셔서 감사해요</p>
-            </>
-          ) : (
-            <>
-              <p style={{ fontSize: "0.8125rem", color: "#888888" }}>교환독서를 모두 마무리하셨나요?</p>
-              <button
-                onClick={handleFinish}
-                disabled={finishing}
-                className="flex items-center gap-2 transition-colors hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: "#f4d23d",
-                  border: "2px solid #030505",
-                  borderRadius: "9999px",
-                  padding: "12px 32px",
-                  fontSize: "0.9375rem",
-                  fontWeight: 700,
-                  color: "#030505",
-                  boxShadow: "0px 1px 4px rgba(3,5,5,0.06)",
-                }}
-              >
-                {finishing ? "처리 중…" : "교환 완료하기"}
-              </button>
-            </>
-          )}
+      {/* Reading notes */}
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <span
+            style={{
+              display: "inline-block",
+              backgroundColor: "#f7a8c7",
+              border: "1.5px solid #030505",
+              borderRadius: "9999px",
+              padding: "3px 12px",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+            }}
+          >
+            Reading Note
+          </span>
+          <button
+            onClick={() => setShowAddNote((v) => !v)}
+            className="flex items-center gap-2 transition-colors hover:brightness-95"
+            style={{
+              backgroundColor: showAddNote ? "#f5f5f5" : "#f4d23d",
+              border: "1.5px solid #030505",
+              borderRadius: "9999px",
+              padding: "6px 14px",
+              fontWeight: 700,
+              fontSize: "0.75rem",
+              color: "#030505",
+            }}
+          >
+            <PencilIcon />
+            {showAddNote ? "취소" : "등록하기"}
+          </button>
         </div>
-      ) : null}
+
+        {showAddNote && (
+          <AddNoteForm
+            bookId={book.id}
+            onAdded={() => { fetchNotes(); setShowAddNote(false); }}
+          />
+        )}
+
+        {loading ? (
+          <p style={{ fontSize: "0.8125rem", color: "#aaaaaa" }}>불러오는 중...</p>
+        ) : notes.length === 0 ? (
+          <p style={{ fontSize: "0.8125rem", color: "#aaaaaa" }}>아직 등록된 노트가 없습니다.</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {notes.map((note) => (
+              <NoteCard key={note.id} note={note} currentUserId={currentUserId} onRefresh={fetchNotes} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
