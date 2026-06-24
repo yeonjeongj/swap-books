@@ -446,18 +446,20 @@ async function downloadBookshelf(
       canvasRoundedTop(ctx, bkX, bkY, bookW, bookH, 4);
       ctx.stroke();
 
-      // vertical title
+      // vertical title: translate to book center, rotate +π/2 so text reads top→bottom
+      // rotate(+π/2): screen_x = tx - py, screen_y = ty + px
+      // textAlign="center" centers the string around px=0 (= vertical center of book)
       ctx.save();
       const fs = Math.max(11, Math.min(17, Math.round(bookW * 0.22)));
-      ctx.translate(bkX + bookW / 2, bkY + bookH - 10);
-      ctx.rotate(-Math.PI / 2);
+      ctx.translate(bkX + bookW / 2, bkY + bookH / 2);
+      ctx.rotate(Math.PI / 2);
       ctx.font = `600 ${fs}px "Noto Sans KR", sans-serif`;
       ctx.fillStyle = "rgba(3,5,5,0.68)";
-      ctx.textAlign = "left";
+      ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      const maxLen = Math.floor((bookH - 16) / (fs + 2));
+      const maxLen = Math.floor((bookH - 20) / fs);
       const label = book.title.length > maxLen ? book.title.slice(0, maxLen - 1) + "…" : book.title;
-      ctx.fillText(label, -(bookH - 16), 0);
+      ctx.fillText(label, 0, 0);
       ctx.restore();
     });
   }
