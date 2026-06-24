@@ -11,15 +11,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <ClarityProvider>
-      <AmplitudeProvider>
-        <SessionProvider>
-          <QueryClientProvider client={queryClient}>
+    <SessionProvider>
+      <QueryClientProvider client={queryClient}>
+        <ClarityProvider>
+          <AmplitudeProvider>
             {children}
             <OnboardingController />
-          </QueryClientProvider>
-        </SessionProvider>
-      </AmplitudeProvider>
-    </ClarityProvider>
+          </AmplitudeProvider>
+        </ClarityProvider>
+      </QueryClientProvider>
+    </SessionProvider>
   );
 }
