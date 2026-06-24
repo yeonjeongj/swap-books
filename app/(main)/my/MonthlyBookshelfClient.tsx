@@ -134,8 +134,11 @@ function AllMonthsPopup({
 
   useEffect(() => {
     fetch("/api/bookshelf?all=true")
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => { if (data) setMonths(data.months ?? []); })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => { setMonths(data.months ?? []); })
       .catch((err) => console.error("Error fetching bookshelf archive:", err))
       .finally(() => setLoading(false));
   }, []);

@@ -101,30 +101,48 @@ export async function getAllMonthsBookshelves(
 
   const joinStart = `${joinYear}-${String(joinMonth).padStart(2, "0")}-01T00:00:00.000Z`;
 
-  const [booksRes, notesRes, swapsRes] = await Promise.all([
-    supabase
-      .from("user_books")
-      .select("id, title, author, created_at")
-      .eq("user_id", userId)
-      .gte("created_at", joinStart)
-      .order("created_at", { ascending: true }),
+  const booksRes = await supabase
+    .from("user_books")
+    .select("id, title, author, created_at")
+    .eq("user_id", userId)
+    .gte("created_at", joinStart)
+    .order("created_at", { ascending: true });
+
+  if (booksRes.error) console.error("[getAllMonthsBookshelves] user_books error:", booksRes.error);
+
+  const allBooks = booksRes.data ?? [];
+  if (allBooks.length === 0) {
+    const monthMap = new Map<string, BookshelfBook[]>();
+    let y = joinYear, m = joinMonth;
+    while (y < nowYear || (y === nowYear && m <= nowMonth)) {
+      monthMap.set(toMonthKey(y, m), []);
+      m++; if (m > 12) { m = 1; y++; }
+    }
+    return Array.from(monthMap.entries()).map(([key, books]) => {
+      const [ky, km] = key.split("-").map(Number);
+      return { year: ky, month: km, books };
+    });
+  }
+
+  const bookIds = allBooks.map((b) => b.id);
+
+  const [notesRes, swapsRes] = await Promise.all([
     supabase
       .from("reading_notes")
       .select("book_id")
+      .in("book_id", bookIds)
       .is("swap_request_id", null),
     supabase
       .from("swap_requests")
       .select("offered_book_id, wanted_book_id, status")
-      .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
+      .or(`offered_book_id.in.(${bookIds.join(",")}),wanted_book_id.in.(${bookIds.join(",")})`)
       .in("status", ["pending", "accepted", "completed"]),
   ]);
 
-  if (booksRes.error) console.error("[getAllMonthsBookshelves] user_books error:", booksRes.error);
   if (notesRes.error) console.error("[getAllMonthsBookshelves] reading_notes error:", notesRes.error);
   if (swapsRes.error) console.error("[getAllMonthsBookshelves] swap_requests error:", swapsRes.error);
 
-  const allBooks = booksRes.data ?? [];
-  const userBookIds = new Set(allBooks.map((b) => b.id));
+  const userBookIds = new Set(bookIds);
 
   const notedSet = new Set((notesRes.data ?? []).map((n) => n.book_id));
   const swappingSet = new Set<string>();
@@ -150,7 +168,7 @@ export async function getAllMonthsBookshelves(
   // Assign each book to its registration month
   for (const book of allBooks) {
     const d = new Date(book.created_at);
-    const key = toMonthKey(d.getFullYear(), d.getMonth() + 1);
+    const key = toMonthKey(d.getUTCFullYear(), d.getUTCMonth() + 1);
     if (!monthMap.has(key)) continue;
     monthMap.get(key)!.push({
       id: book.id,
