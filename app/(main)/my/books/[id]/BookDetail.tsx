@@ -386,20 +386,18 @@ function AddNoteForm({ bookId, onAdded }: { bookId: string; onAdded: () => void 
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    return () => { if (imagePreview) URL.revokeObjectURL(imagePreview); };
-  }, [imagePreview]);
+    if (!imageFile) { setImagePreview(null); return; }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImageFile(file);
-    setImagePreview(file ? URL.createObjectURL(file) : null);
+    setImageFile(e.target.files?.[0] ?? null);
   }
 
   function removeImage() {
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImageFile(null);
-    setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -446,6 +444,9 @@ function AddNoteForm({ bookId, onAdded }: { bookId: string; onAdded: () => void 
       setComment("");
       removeImage();
       onAdded();
+    } catch (err) {
+      console.error("[AddNoteForm] submit error:", err);
+      setError("네트워크 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setSubmitting(false);
     }

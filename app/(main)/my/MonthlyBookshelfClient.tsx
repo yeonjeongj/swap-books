@@ -134,8 +134,12 @@ function AllMonthsPopup({
 
   useEffect(() => {
     fetch("/api/bookshelf?all=true")
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => { if (data) setMonths(data.months ?? []); })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => { setMonths(data.months ?? []); })
+      .catch((err) => console.error("Error fetching bookshelf archive:", err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -440,14 +444,11 @@ export default function MonthlyBookshelfClient({
   const [downloading, setDownloading] = useState(false);
   const [showAllMonths, setShowAllMonths] = useState(false);
 
-  const now = new Date();
-  const nowYear = now.getFullYear();
-  const nowMonth = now.getMonth() + 1;
-
   const canGoPrev =
     year > joinYear || (year === joinYear && month > joinMonth);
+  // Use server-derived initialYear/Month to avoid SSR/client hydration mismatch
   const canGoNext =
-    year < nowYear || (year === nowYear && month < nowMonth);
+    year < initialYear || (year === initialYear && month < initialMonth);
 
   const navigate = useCallback(
     async (dir: -1 | 1) => {
