@@ -524,7 +524,7 @@ async function downloadBookshelf(
   ctx.fillStyle = "#cccccc";
   ctx.textAlign = "right";
   ctx.textBaseline = "alphabetic";
-  ctx.fillText("swap-books.vercel.app", W - PAD, H - PAD);
+  ctx.fillText("@s.wap_books", W - PAD, H - PAD);
 
   const link = document.createElement("a");
   link.download = `${year}년-${month}월의-책장.png`;
