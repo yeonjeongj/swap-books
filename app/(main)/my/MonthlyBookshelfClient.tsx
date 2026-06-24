@@ -293,6 +293,45 @@ function AllMonthsPopup({
   );
 }
 
+// ——— Canvas helpers ———
+
+function canvasPill(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  const r = h / 2;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function canvasRoundedTop(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function canvasRoundedBottom(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + w, y);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y);
+  ctx.closePath();
+}
+
 // ——— Canvas download ———
 
 async function downloadBookshelf(
@@ -308,113 +347,182 @@ async function downloadBookshelf(
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  // Background
+  const PAD = 80;
+  const AVAIL_W = W - PAD * 2; // 920px
+  const GAP = 8;
+  const BK_PAD = 8; // padding inside shelf container
+
+  // ─── book sizing: 2× UI (36→72, 120→240), scale down if too many books ───
+  let bookW = 72, bookH = 240;
+  let booksPerRow = Math.floor((AVAIL_W + GAP) / (bookW + GAP)); // 11
+  let numRows = books.length > 0 ? Math.ceil(books.length / booksPerRow) : 1;
+
+  const MAX_BOOKS_H = 500;
+  if (numRows * bookH + (numRows - 1) * GAP > MAX_BOOKS_H) {
+    bookH = Math.floor((MAX_BOOKS_H - (numRows - 1) * GAP) / numRows);
+    bookW = Math.round(bookH * 36 / 120);
+    booksPerRow = Math.floor((AVAIL_W + GAP) / (bookW + GAP));
+    numRows = books.length > 0 ? Math.ceil(books.length / booksPerRow) : 1;
+  }
+
+  const SHELF_H = 18, SHADOW_H = 10;
+  const CONTAINER_H = BK_PAD + numRows * bookH + (numRows - 1) * GAP;
+
+  // ─── vertical layout: center content in 1080×1080 ───
+  const BADGE_H = 80, YEAR_H = 36;
+  const LEGEND_H = 22, STATS_H = 28;
+  const TOTAL_H = BADGE_H + 20 + YEAR_H + 28 + CONTAINER_H + SHELF_H + SHADOW_H + 44 + LEGEND_H + 20 + STATS_H;
+  let cy = Math.max(PAD, Math.floor((H - TOTAL_H) / 2));
+
+  // ─── background ───
   ctx.fillStyle = "#faf8f4";
   ctx.fillRect(0, 0, W, H);
 
-  // Outer border
+  // ─── month badge (pill, matching UI badge style) ───
+  ctx.font = `700 52px "Fredoka", "Noto Sans KR", sans-serif`;
+  const badgeText = `${month}월의 책장`;
+  const badgePX = 28, badgePY = 14;
+  const badgeW = ctx.measureText(badgeText).width + badgePX * 2;
+  const badgeH = 52 + badgePY * 2;
+
+  ctx.fillStyle = "#b8e6b0";
+  canvasPill(ctx, PAD, cy, badgeW, badgeH);
+  ctx.fill();
   ctx.strokeStyle = "#030505";
-  ctx.lineWidth = 3;
-  ctx.strokeRect(36, 36, W - 72, H - 72);
-
-  // Inner accent border
-  ctx.strokeStyle = "#E0E0E0";
-  ctx.lineWidth = 1;
-  ctx.strokeRect(44, 44, W - 88, H - 88);
-
-  // Title
-  ctx.font = `bold 76px "Fredoka", "Noto Sans KR", sans-serif`;
+  ctx.lineWidth = 2;
+  canvasPill(ctx, PAD, cy, badgeW, badgeH);
+  ctx.stroke();
   ctx.fillStyle = "#030505";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText(`${month}월의 책장`, 80, 160);
-
-  // Year label
-  ctx.font = `500 34px "Fredoka", sans-serif`;
-  ctx.fillStyle = "#888888";
-  ctx.fillText(`${year}`, 80, 208);
-
-  // Bookshelf area
-  const shelfY = 640;
-  const bookH = 220;
-  const numBooks = Math.max(books.length, 1);
-  const availW = W - 160;
-  const gap = 6;
-  const bookW = Math.min(120, Math.floor((availW - gap * (numBooks - 1)) / numBooks));
-  const totalW = numBooks * bookW + (numBooks - 1) * gap;
-  const startX = Math.floor((W - totalW) / 2);
-
-  // Books
-  books.forEach((book, i) => {
-    const x = startX + i * (bookW + gap);
-    const y = shelfY - bookH;
-
-    const grad = ctx.createLinearGradient(x, 0, x + bookW, 0);
-    grad.addColorStop(0, "rgba(0,0,0,0.07)");
-    grad.addColorStop(0.12, STATUS_COLORS[book.status]);
-    grad.addColorStop(0.88, STATUS_COLORS[book.status]);
-    grad.addColorStop(1, "rgba(0,0,0,0.07)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(x, y, bookW, bookH);
-
-    ctx.strokeStyle = "rgba(3,5,5,0.18)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, bookW, bookH);
-
-    ctx.save();
-    ctx.translate(x + bookW / 2, shelfY - 14);
-    ctx.rotate(-Math.PI / 2);
-    ctx.font = `600 ${Math.max(12, Math.min(16, bookW * 0.26))}px "Noto Sans KR", sans-serif`;
-    ctx.fillStyle = "rgba(3,5,5,0.68)";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    const label = book.title.length > 10 ? book.title.slice(0, 9) + "…" : book.title;
-    ctx.fillText(label, -(bookH - 24), 0);
-    ctx.restore();
-  });
-
-  // Shelf board
-  const shelfGrad = ctx.createLinearGradient(0, shelfY, 0, shelfY + 18);
-  shelfGrad.addColorStop(0, "#b8895a");
-  shelfGrad.addColorStop(1, "#7a5c36");
-  ctx.fillStyle = shelfGrad;
-  ctx.fillRect(60, shelfY, W - 120, 18);
-  ctx.strokeStyle = "rgba(3,5,5,0.5)";
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(60, shelfY, W - 120, 18);
-
-  // Shadow below shelf
-  ctx.fillStyle = "rgba(3,5,5,0.08)";
-  ctx.fillRect(60, shelfY + 18, W - 120, 10);
-
-  // Legend
-  const legendY = shelfY + 60;
-  const statuses = ["registered", "noted", "swapping", "swapped"] as BookStatus[];
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  statuses.forEach((s, i) => {
-    const lx = 80 + i * 240;
-    ctx.fillStyle = STATUS_COLORS[s];
-    ctx.fillRect(lx, legendY, 24, 24);
-    ctx.strokeStyle = "rgba(3,5,5,0.2)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(lx, legendY, 24, 24);
-    ctx.font = `500 20px "Noto Sans KR", sans-serif`;
-    ctx.fillStyle = "#444444";
-    ctx.fillText(STATUS_LABELS[s], lx + 32, legendY + 12);
-  });
+  ctx.fillText(badgeText, PAD + badgePX, cy + badgeH / 2);
+  cy += badgeH + 20;
 
-  // Stats
-  ctx.font = `700 28px "Noto Sans KR", sans-serif`;
-  ctx.fillStyle = "#030505";
+  // ─── year ───
+  ctx.font = `500 30px "Fredoka", sans-serif`;
+  ctx.fillStyle = "#888888";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(String(year), PAD, cy + 30);
+  cy += YEAR_H + 28;
+
+  // ─── shelf container: 3-sided border (open bottom, matching UI borderBottom: "none") ───
+  const containerY = cy;
+  ctx.strokeStyle = "#E0E0E0";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(PAD, containerY + CONTAINER_H);
+  ctx.lineTo(PAD, containerY + 8);
+  ctx.arcTo(PAD, containerY, PAD + 8, containerY, 8);
+  ctx.lineTo(PAD + AVAIL_W - 8, containerY);
+  ctx.arcTo(PAD + AVAIL_W, containerY, PAD + AVAIL_W, containerY + 8, 8);
+  ctx.lineTo(PAD + AVAIL_W, containerY + CONTAINER_H);
+  ctx.stroke();
+
+  // ─── books (flex-wrap layout) ───
+  if (books.length === 0) {
+    ctx.font = `500 26px "Noto Sans KR", sans-serif`;
+    ctx.fillStyle = "#aaaaaa";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("이 달에 등록한 책이 없어요", W / 2, containerY + CONTAINER_H / 2);
+  } else {
+    books.forEach((book, i) => {
+      const row = Math.floor(i / booksPerRow);
+      const col = i % booksPerRow;
+      const bkX = PAD + BK_PAD + col * (bookW + GAP);
+      const bkY = containerY + BK_PAD + row * (bookH + GAP);
+
+      const grad = ctx.createLinearGradient(bkX, 0, bkX + bookW, 0);
+      grad.addColorStop(0, "rgba(0,0,0,0.06)");
+      grad.addColorStop(0.15, STATUS_COLORS[book.status]);
+      grad.addColorStop(0.85, STATUS_COLORS[book.status]);
+      grad.addColorStop(1, "rgba(0,0,0,0.06)");
+      ctx.fillStyle = grad;
+      canvasRoundedTop(ctx, bkX, bkY, bookW, bookH, 4);
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(3,5,5,0.15)";
+      ctx.lineWidth = 1;
+      canvasRoundedTop(ctx, bkX, bkY, bookW, bookH, 4);
+      ctx.stroke();
+
+      // vertical title
+      ctx.save();
+      const fs = Math.max(11, Math.min(17, Math.round(bookW * 0.22)));
+      ctx.translate(bkX + bookW / 2, bkY + bookH - 10);
+      ctx.rotate(-Math.PI / 2);
+      ctx.font = `600 ${fs}px "Noto Sans KR", sans-serif`;
+      ctx.fillStyle = "rgba(3,5,5,0.68)";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      const maxLen = Math.floor((bookH - 16) / (fs + 2));
+      const label = book.title.length > maxLen ? book.title.slice(0, maxLen - 1) + "…" : book.title;
+      ctx.fillText(label, -(bookH - 16), 0);
+      ctx.restore();
+    });
+  }
+  cy = containerY + CONTAINER_H;
+
+  // ─── shelf board (rounded bottom, matching UI) ───
+  const shelfGrad = ctx.createLinearGradient(0, cy, 0, cy + SHELF_H);
+  shelfGrad.addColorStop(0, "#a0784a");
+  shelfGrad.addColorStop(1, "#7a5c36");
+  ctx.fillStyle = shelfGrad;
+  canvasRoundedBottom(ctx, PAD, cy, AVAIL_W, SHELF_H, 4);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(3,5,5,0.35)";
+  ctx.lineWidth = 1.5;
+  canvasRoundedBottom(ctx, PAD, cy, AVAIL_W, SHELF_H, 4);
+  ctx.stroke();
+  cy += SHELF_H;
+
+  // shelf drop shadow
+  const shadowGrad = ctx.createLinearGradient(0, cy, 0, cy + SHADOW_H);
+  shadowGrad.addColorStop(0, "rgba(3,5,5,0.12)");
+  shadowGrad.addColorStop(1, "rgba(3,5,5,0)");
+  ctx.fillStyle = shadowGrad;
+  ctx.fillRect(PAD, cy, AVAIL_W, SHADOW_H);
+  cy += SHADOW_H + 44;
+
+  // ─── legend (only active statuses) ───
+  const activeStatuses = (["registered", "noted", "swapping", "swapped"] as BookStatus[])
+    .filter(s => books.some(b => b.status === s));
+
+  const SWATCH = 20;
+  let lx = PAD;
   ctx.textAlign = "left";
-  ctx.fillText(`총 ${books.length}권`, 80, legendY + 70);
+  ctx.textBaseline = "middle";
 
-  // Watermark
+  activeStatuses.forEach((s) => {
+    const count = books.filter(b => b.status === s).length;
+    const labelText = `${STATUS_LABELS[s]} ${count}권`;
+
+    ctx.fillStyle = STATUS_COLORS[s];
+    ctx.fillRect(lx, cy, SWATCH, SWATCH);
+    ctx.strokeStyle = "rgba(3,5,5,0.15)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(lx, cy, SWATCH, SWATCH);
+
+    ctx.font = `500 18px "Noto Sans KR", sans-serif`;
+    ctx.fillStyle = "#555555";
+    ctx.fillText(labelText, lx + SWATCH + 8, cy + SWATCH / 2);
+    lx += SWATCH + 8 + ctx.measureText(labelText).width + 24;
+  });
+  cy += SWATCH + 20;
+
+  // ─── total count ───
+  ctx.font = `700 24px "Noto Sans KR", sans-serif`;
+  ctx.fillStyle = "#030505";
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
+  ctx.fillText(`총 ${books.length}권`, PAD, cy + 24);
+
+  // ─── watermark ───
   ctx.font = `500 22px "Fredoka", sans-serif`;
   ctx.fillStyle = "#cccccc";
   ctx.textAlign = "right";
-  ctx.fillText("swap-books.vercel.app", W - 60, H - 60);
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("swap-books.vercel.app", W - PAD, H - PAD);
 
   const link = document.createElement("a");
   link.download = `${year}년-${month}월의-책장.png`;
