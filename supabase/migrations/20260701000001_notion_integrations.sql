@@ -10,4 +10,10 @@ CREATE TABLE notion_integrations (
 );
 
 ALTER TABLE notion_integrations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own notion integrations"
+  ON notion_integrations
+  FOR ALL
+  USING (auth.uid()::text = user_id);
+
 CREATE INDEX idx_notion_integrations_user_id ON notion_integrations(user_id);

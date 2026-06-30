@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
 
   const token = await tokenRes.json();
 
-  await supabase.from("notion_integrations").upsert(
+  const { error: upsertError } = await supabase.from("notion_integrations").upsert(
     {
       user_id: session.user.id,
       access_token: token.access_token,
@@ -54,6 +54,10 @@ export async function GET(req: NextRequest) {
     },
     { onConflict: "user_id" }
   );
+
+  if (upsertError) {
+    return NextResponse.redirect(new URL(`${redirectTo}?notion_error=1`, req.url));
+  }
 
   return NextResponse.redirect(new URL(`${redirectTo}?notion_ready=1`, req.url));
 }

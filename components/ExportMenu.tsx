@@ -90,9 +90,13 @@ export default function ExportMenu({ swapId, userBookId }: Props) {
       }
 
       const { pageUrl } = await res.json();
-      window.open(pageUrl, "_blank");
-      setMessage("노션 페이지가 생성되었습니다.");
-      setOpen(false);
+      const opened = window.open(pageUrl, "_blank");
+      if (!opened) {
+        setMessage("팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.");
+      } else {
+        setMessage("노션 페이지가 생성되었습니다.");
+        setOpen(false);
+      }
     } finally {
       setNotionLoading(false);
     }

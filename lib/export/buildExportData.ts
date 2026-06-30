@@ -119,18 +119,15 @@ async function buildSoloExportData(userId: string, userBookId: string): Promise<
 
   if (bookError || !book) throw new Error("Book not found or access denied");
 
-  const { data: userRow } = await supabase
-    .from("users")
-    .select("nickname")
-    .eq("id", userId)
-    .single();
-
-  const { data: notes } = await supabase
-    .from("reading_notes")
-    .select(NOTE_SELECT)
-    .eq("book_id", userBookId)
-    .is("swap_request_id", null)
-    .order("page", { ascending: true });
+  const [{ data: userRow }, { data: notes }] = await Promise.all([
+    supabase.from("users").select("nickname").eq("id", userId).single(),
+    supabase
+      .from("reading_notes")
+      .select(NOTE_SELECT)
+      .eq("book_id", userBookId)
+      .is("swap_request_id", null)
+      .order("page", { ascending: true }),
+  ]);
 
   return {
     kind: "solo",

@@ -170,11 +170,24 @@ export async function createNotionPage(
   const notion = new Client({ auth: accessToken });
   const { title, blocks } = buildNotionBlocks(data, appUrl);
 
+  // Public Integration은 workspace root 접근 불가 — OAuth로 공유된 첫 번째 페이지를 parent로 사용
+  const searchResponse = await notion.search({
+    filter: { property: "object", value: "page" },
+    page_size: 1,
+  });
+
+  const parentPage = searchResponse.results[0];
+  if (!parentPage) {
+    throw new Error(
+      "노션에서 공유된 페이지를 찾을 수 없습니다. 노션 설정에서 페이지 접근 권한을 허용해주세요."
+    );
+  }
+
   const firstBatch = blocks.slice(0, NOTION_BLOCK_LIMIT - 2);
   const remaining = blocks.slice(NOTION_BLOCK_LIMIT - 2);
 
   const response = await notion.pages.create({
-    parent: { type: "workspace", workspace: true },
+    parent: { page_id: parentPage.id },
     properties: {
       title: { title: [{ type: "text", text: { content: title } }] },
     },
