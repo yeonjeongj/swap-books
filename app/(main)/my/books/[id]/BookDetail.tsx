@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { highResCover } from "@/lib/utils/cover";
+import ExportMenu from "@/components/ExportMenu";
 
 type BookData = {
   id: string;
@@ -632,22 +633,25 @@ export default function BookDetail({ book, currentUserId }: Props) {
           >
             Reading Note
           </span>
-          <button
-            onClick={() => setShowAddNote((v) => !v)}
-            className="flex items-center gap-2 transition-colors hover:brightness-95"
-            style={{
-              backgroundColor: showAddNote ? "#f5f5f5" : "#f4d23d",
-              border: "1.5px solid #030505",
-              borderRadius: "9999px",
-              padding: "6px 14px",
-              fontWeight: 700,
-              fontSize: "0.75rem",
-              color: "#030505",
-            }}
-          >
-            <PencilIcon />
-            {showAddNote ? "취소" : "등록하기"}
-          </button>
+          <div className="flex items-center gap-2">
+            <ExportMenu userBookId={book.id} />
+            <button
+              onClick={() => setShowAddNote((v) => !v)}
+              className="flex items-center gap-2 transition-colors hover:brightness-95"
+              style={{
+                backgroundColor: showAddNote ? "#f5f5f5" : "#f4d23d",
+                border: "1.5px solid #030505",
+                borderRadius: "9999px",
+                padding: "6px 14px",
+                fontWeight: 700,
+                fontSize: "0.75rem",
+                color: "#030505",
+              }}
+            >
+              <PencilIcon />
+              {showAddNote ? "취소" : "등록하기"}
+            </button>
+          </div>
         </div>
 
         {showAddNote && (
