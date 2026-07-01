@@ -22,8 +22,12 @@ export default function SwapListClient({ requests: initial }: { requests: Public
   const [selected, setSelected] = useState<PublicSwapItem | null>(null);
 
   function handleCardClick(req: PublicSwapItem) {
+    if (status !== "authenticated") {
+      alert("로그인이 필요한 서비스입니다.");
+      return;
+    }
     const userId = session?.user?.id;
-    if (status === "authenticated" && userId && userId !== req.requester_id) {
+    if (userId && userId !== req.requester_id) {
       setSelected(req);
     } else {
       router.push(`/swap/${req.id}`);

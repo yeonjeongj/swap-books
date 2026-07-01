@@ -58,8 +58,12 @@ export default function MainPublicRequestsClient({ requests: initial }: { reques
   const [selected, setSelected] = useState<MainPublicRequest | null>(null);
 
   function handleCardClick(req: MainPublicRequest) {
+    if (status !== "authenticated") {
+      alert("로그인이 필요한 서비스입니다.");
+      return;
+    }
     const userId = session?.user?.id;
-    if (status === "authenticated" && userId && userId !== req.requester_id) {
+    if (userId && userId !== req.requester_id) {
       setSelected(req);
     } else {
       router.push(`/swap/${req.id}`);
