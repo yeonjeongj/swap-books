@@ -58,7 +58,8 @@ export default function MainPublicRequestsClient({ requests: initial }: { reques
   const [selected, setSelected] = useState<MainPublicRequest | null>(null);
 
   function handleCardClick(req: MainPublicRequest) {
-    if (status !== "authenticated") {
+    if (status === "loading") return;
+    if (status === "unauthenticated") {
       alert("로그인이 필요한 서비스입니다.");
       return;
     }

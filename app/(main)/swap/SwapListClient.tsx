@@ -22,7 +22,8 @@ export default function SwapListClient({ requests: initial }: { requests: Public
   const [selected, setSelected] = useState<PublicSwapItem | null>(null);
 
   function handleCardClick(req: PublicSwapItem) {
-    if (status !== "authenticated") {
+    if (status === "loading") return;
+    if (status === "unauthenticated") {
       alert("로그인이 필요한 서비스입니다.");
       return;
     }
