@@ -32,7 +32,9 @@ const STEPS = [
 function dedupeBooksByTitleAndAuthor(books: RecentBook[]): RecentBook[] {
   const seen = new Set<string>();
   return books.filter((book) => {
-    const key = `${book.title.trim().toLowerCase()}::${book.author.trim().toLowerCase()}`;
+    const title = book.title?.trim().toLowerCase() ?? "";
+    const author = book.author?.trim().toLowerCase() ?? "";
+    const key = `${title}::${author}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

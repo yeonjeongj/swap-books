@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (!requesterMessage || !requesterMessage.trim()) {
+  if (typeof requesterMessage !== "string" || !requesterMessage.trim()) {
     return NextResponse.json(
       { error: "requesterMessage is required" },
       { status: 400 }

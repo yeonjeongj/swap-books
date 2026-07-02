@@ -118,9 +118,10 @@ export async function GET() {
         .gte("created_at", activitySince),
       supabase
         .from("reading_note_comments")
-        .select("id, author_id, created_at, note:reading_notes!note_id(swap_request_id)")
+        .select("id, author_id, created_at, note:reading_notes!note_id!inner(swap_request_id)")
         .neq("author_id", myId)
-        .gte("created_at", activitySince),
+        .gte("created_at", activitySince)
+        .in("note.swap_request_id", swapIds),
     ]);
 
     if (notesResult.error) {

@@ -143,13 +143,14 @@ describe('GET /api/swaps/incoming', () => {
         note: { swap_request_id: 'swap-1' },
       },
     ]
+    const commentsChain = chain({ data: comments, error: null })
     mockFrom
       .mockReturnValueOnce(chain({ data: [], error: null })) // incoming
       .mockReturnValueOnce(chain({ data: [], error: null })) // rejected
       .mockReturnValueOnce(chain({ data: [acceptedSwap], error: null })) // accepted swaps
       .mockReturnValueOnce(chain({ data: [], error: null })) // completed
       .mockReturnValueOnce(chain({ data: notes, error: null })) // reading_notes
-      .mockReturnValueOnce(chain({ data: comments, error: null })) // reading_note_comments
+      .mockReturnValueOnce(commentsChain) // reading_note_comments
     const res = await GET()
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -157,6 +158,8 @@ describe('GET /api/swaps/incoming', () => {
     expect(body.activity[0].count).toBe(3) // n1, n2, c1 within 30 min of each other; c2 excluded
     expect(body.activity[0].offered_book.title).toBe('헤르만 헤세의 문장들')
     expect(body.activity[0].partner.nickname).toBe('상대방')
+    // The comments query must filter by swap ids at the DB level (not just in application code)
+    expect(commentsChain.in).toHaveBeenCalledWith('note.swap_request_id', ['swap-1'])
   })
 
   it('only surfaces completed notifications when the other participant completed it', async () => {
