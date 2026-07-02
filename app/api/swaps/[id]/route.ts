@@ -125,13 +125,16 @@ export async function PATCH(
     );
   }
 
-  if (
-    (body.status === "accepted" || body.status === "rejected") &&
-    !isReceiver &&
-    !isPublicPending
-  ) {
+  if (body.status === "accepted" && !isReceiver && !isPublicPending) {
     return NextResponse.json(
-      { error: "Only the receiver can accept or reject this swap request" },
+      { error: "Only the receiver can accept this swap request" },
+      { status: 403 }
+    );
+  }
+
+  if (body.status === "rejected" && !isReceiver) {
+    return NextResponse.json(
+      { error: "Only the receiver can reject this swap request" },
       { status: 403 }
     );
   }
@@ -174,6 +177,10 @@ export async function PATCH(
       updatePayload.wanted_book_id = body.wantedBookId;
     }
     updatePayload.receiver_message = body.receiverMessage ?? null;
+  }
+
+  if (body.status === "completed") {
+    updatePayload.completed_by = session.user.id;
   }
 
   const { data, error } = await supabase
