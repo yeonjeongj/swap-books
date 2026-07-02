@@ -29,13 +29,25 @@ const STEPS = [
   { num: "03", title: "Read & Share", ko: "함께 천천히 읽어보세요" },
 ];
 
+function dedupeBooksByTitleAndAuthor(books: RecentBook[]): RecentBook[] {
+  const seen = new Set<string>();
+  return books.filter((book) => {
+    const title = book.title?.trim().toLowerCase() ?? "";
+    const author = book.author?.trim().toLowerCase() ?? "";
+    const key = `${title}::${author}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export default async function HomePage() {
   const [booksResult, requestsResult, activeSwapsResult] = await Promise.all([
     supabase
       .from("user_books")
       .select("id, title, author, cover_image")
       .order("created_at", { ascending: false })
-      .limit(8),
+      .limit(50),
     supabase
       .from("swap_requests")
       .select(
@@ -63,7 +75,9 @@ export default async function HomePage() {
       .limit(4),
   ]);
 
-  const recentBooks = (booksResult.data ?? []) as RecentBook[];
+  const recentBooks = dedupeBooksByTitleAndAuthor(
+    (booksResult.data ?? []) as RecentBook[],
+  ).slice(0, 8);
   const publicRequests = (requestsResult.data ??
     []) as unknown as MainPublicRequest[];
   const activeSwaps = (activeSwapsResult.data ??

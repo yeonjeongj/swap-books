@@ -57,6 +57,12 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  if (typeof requesterMessage !== "string" || !requesterMessage.trim()) {
+    return NextResponse.json(
+      { error: "requesterMessage is required" },
+      { status: 400 }
+    );
+  }
 
   const { data: book, error: bookError } = await supabase
     .from("user_books")

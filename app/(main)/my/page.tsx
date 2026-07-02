@@ -12,6 +12,8 @@ import CalendarClient, { type CalendarEvent } from "./CalendarClient";
 import MyPublicRequestActions from "./MyPublicRequestActions";
 import MonthlyBookshelfClient from "./MonthlyBookshelfClient";
 
+const REJECTED_VISIBLE_MS = 7 * 24 * 60 * 60 * 1000;
+
 type UserBook = {
   id: string;
   isbn: string | null;
@@ -27,6 +29,7 @@ type SwapWithRelations = {
   status: string;
   is_public: boolean;
   created_at: string;
+  updated_at: string;
   requester_id: string;
   receiver_id: string | null;
   requester_message: string | null;
@@ -115,6 +118,23 @@ function SwapCard({ swap, userId }: { swap: SwapWithRelations; userId: string })
         >
           {isRequester ? "내가 요청" : "받은 요청"}
         </span>
+        {swap.status === "rejected" && (
+          <span
+            style={{
+              display: "inline-block",
+              backgroundColor: "#f7a8c7",
+              border: "1px solid #030505",
+              borderRadius: "9999px",
+              padding: "1px 8px",
+              fontSize: "0.5625rem",
+              fontWeight: 700,
+              color: "#030505",
+              marginLeft: "4px",
+            }}
+          >
+            거절됨
+          </span>
+        )}
         <p className="text-xs mt-1" style={{ color: "#555555" }}>{partnerName}</p>
         <p style={{ fontSize: "0.5625rem", color: "#aaaaaa", marginTop: "2px" }}>{dateStr}</p>
       </div>
@@ -181,7 +201,7 @@ export default async function MyPage() {
     const [booksResult, swapsResult, swapsDataResult, eventsResult, shelfBooks, joinDate] = await Promise.all([
       supabase.from("user_books").select("id, isbn, title, author, publisher, cover_image, created_at").eq("user_id", session.user.id).order("created_at", { ascending: false }),
       supabase.from("swap_requests").select("id", { count: "exact", head: true }).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`),
-      supabase.from("swap_requests").select(`id, status, is_public, created_at, requester_id, receiver_id, requester_message, offered_book:user_books!offered_book_id(id, title, author, cover_image), wanted_book:user_books!wanted_book_id(id, title, author, cover_image), requester:users!requester_id(id, nickname), receiver:users!receiver_id(id, nickname)`).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`).in("status", ["pending", "accepted", "completed"]).order("created_at", { ascending: false }),
+      supabase.from("swap_requests").select(`id, status, is_public, created_at, updated_at, requester_id, receiver_id, requester_message, offered_book:user_books!offered_book_id(id, title, author, cover_image), wanted_book:user_books!wanted_book_id(id, title, author, cover_image), requester:users!requester_id(id, nickname), receiver:users!receiver_id(id, nickname)`).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`).in("status", ["pending", "accepted", "completed", "rejected"]).order("created_at", { ascending: false }),
       supabase.from("calendar_events").select("id, title, date, time").eq("user_id", session.user.id).gte("date", monthFrom).lte("date", monthTo).order("date").order("created_at"),
       getBooksForMonth(session.user.id, calYear, calMonth + 1),
       getUserJoinYearMonth(session.user.id),
@@ -206,6 +226,9 @@ export default async function MyPage() {
   const pendingSwaps = mySwaps.filter((s) => s.status === "pending");
   const acceptedSwaps = mySwaps.filter((s) => s.status === "accepted");
   const completedSwaps = mySwaps.filter((s) => s.status === "completed");
+  const rejectedSwaps = mySwaps.filter(
+    (s) => s.status === "rejected" && now.getTime() - new Date(s.updated_at).getTime() < REJECTED_VISIBLE_MS
+  );
 
   return (
     <div className="w-full max-w-3xl mx-auto px-5 py-12">
@@ -352,7 +375,7 @@ export default async function MyPage() {
       )}
 
       {/* Active swap lists */}
-      {(pendingSwaps.length > 0 || acceptedSwaps.length > 0) && (
+      {(pendingSwaps.length > 0 || acceptedSwaps.length > 0 || rejectedSwaps.length > 0) && (
         <>
           <div className="flex items-center gap-2 mb-4">
             <span
@@ -374,6 +397,9 @@ export default async function MyPage() {
           )}
           {acceptedSwaps.length > 0 && (
             <SwapSection title="수락된 교환" swaps={acceptedSwaps} userId={userId} />
+          )}
+          {rejectedSwaps.length > 0 && (
+            <SwapSection title="거절된 요청" swaps={rejectedSwaps} userId={userId} />
           )}
           <div className="mb-10" style={{ borderTop: "1px solid #e5e5e5" }} />
         </>

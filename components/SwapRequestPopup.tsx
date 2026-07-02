@@ -149,6 +149,10 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
       setError("교환 상대를 선택하거나 공개 모집을 선택해주세요.");
       return;
     }
+    if (!message.trim()) {
+      setError("하고 싶은 말을 입력해주세요.");
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -305,15 +309,14 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
           {/* Message */}
           <div>
             <label htmlFor="requester-message" style={labelStyle} className="block mb-1.5">
-              하고 싶은 말{" "}
-              <span style={{ fontSize: "0.625rem", fontWeight: 400, color: "#aaaaaa" }}>Optional</span>
+              하고 싶은 말
             </label>
             <textarea
               id="requester-message"
               rows={3}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="좋아하는 문구나 이 책을 추천하는 이유를 자유롭게 적어주세요"
+              placeholder="이 책의 어떤 점이 좋았나요? 한 줄로 알려주세요"
               className="w-full px-3 py-2 text-sm outline-none transition-colors focus:border-[#030505] bg-white resize-none"
               style={{ border: "1.5px solid #dddddd", borderRadius: "8px", color: "#030505" }}
             />
@@ -408,7 +411,7 @@ export default function SwapRequestPopup({ userBooks, onClose, onSuccess }: Prop
 
           <button
             type="submit"
-            disabled={submitting || !selectedBook || (!selectedPartner && !isPublicRecruit)}
+            disabled={submitting || !selectedBook || !message.trim() || (!selectedPartner && !isPublicRecruit)}
             className="mt-1 transition-colors hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: "#f4d23d",

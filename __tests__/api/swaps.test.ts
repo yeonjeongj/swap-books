@@ -88,12 +88,36 @@ describe('POST /api/swaps', () => {
     expect(body.error).toBe('receiverId is required for private swap requests')
   })
 
+  it('returns 400 when requesterMessage is missing', async () => {
+    mockAuth.mockResolvedValue(SESSION)
+    const req = new NextRequest('http://localhost/api/swaps', {
+      method: 'POST',
+      body: JSON.stringify({ offeredBookId: 'b1', isPublic: true }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toBe('requesterMessage is required')
+  })
+
+  it('returns 400 when requesterMessage is blank', async () => {
+    mockAuth.mockResolvedValue(SESSION)
+    const req = new NextRequest('http://localhost/api/swaps', {
+      method: 'POST',
+      body: JSON.stringify({ offeredBookId: 'b1', isPublic: true, requesterMessage: '   ' }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toBe('requesterMessage is required')
+  })
+
   it('returns 404 when offered book does not exist', async () => {
     mockAuth.mockResolvedValue(SESSION)
     mockFrom.mockReturnValue(chain({ data: null, error: { message: 'not found' } }))
     const req = new NextRequest('http://localhost/api/swaps', {
       method: 'POST',
-      body: JSON.stringify({ offeredBookId: 'b1', isPublic: true }),
+      body: JSON.stringify({ offeredBookId: 'b1', isPublic: true, requesterMessage: '좋아요' }),
     })
     const res = await POST(req)
     expect(res.status).toBe(404)
@@ -104,7 +128,7 @@ describe('POST /api/swaps', () => {
     mockFrom.mockReturnValue(chain({ data: { user_id: 'other-user' }, error: null }))
     const req = new NextRequest('http://localhost/api/swaps', {
       method: 'POST',
-      body: JSON.stringify({ offeredBookId: 'b1', isPublic: true }),
+      body: JSON.stringify({ offeredBookId: 'b1', isPublic: true, requesterMessage: '좋아요' }),
     })
     const res = await POST(req)
     expect(res.status).toBe(403)
@@ -119,7 +143,7 @@ describe('POST /api/swaps', () => {
       .mockReturnValueOnce(chain({ data: newSwap, error: null }))
     const req = new NextRequest('http://localhost/api/swaps', {
       method: 'POST',
-      body: JSON.stringify({ offeredBookId: 'b1', isPublic: true }),
+      body: JSON.stringify({ offeredBookId: 'b1', isPublic: true, requesterMessage: '좋아요' }),
     })
     const res = await POST(req)
     expect(res.status).toBe(201)

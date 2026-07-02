@@ -136,6 +136,7 @@ describe('SwapRequestPopup', () => {
     await waitFor(() => screen.getByText('파트너'))
     await user.click(screen.getByText('파트너'))
 
+    await user.type(screen.getByPlaceholderText('이 책의 어떤 점이 좋았나요? 한 줄로 알려주세요'), '재밌어요')
     await user.click(screen.getByRole('button', { name: '교환하기' }))
 
     await waitFor(() => {
@@ -171,6 +172,7 @@ describe('SwapRequestPopup', () => {
     await waitFor(() => screen.getByText('파트너'))
     await user.click(screen.getByText('파트너'))
 
+    await user.type(screen.getByPlaceholderText('이 책의 어떤 점이 좋았나요? 한 줄로 알려주세요'), '재밌어요')
     await user.click(screen.getByRole('button', { name: '교환하기' }))
 
     await waitFor(() => {
@@ -199,6 +201,7 @@ describe('SwapRequestPopup', () => {
     // Use public recruit instead of selecting a partner
     await user.click(screen.getByText('파트너 공개 모집하기'))
 
+    await user.type(screen.getByPlaceholderText('이 책의 어떤 점이 좋았나요? 한 줄로 알려주세요'), '재밌어요')
     await user.click(screen.getByRole('button', { name: '교환하기' }))
 
     await waitFor(() => {
